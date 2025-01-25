@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buddy Music - ver 0.XA</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,0" >
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h2>Buddy Music (Beta)</h2>
+                <div class="header-buttons">
+                    <label for="folder-input" class="icon-btn add-icon" style="width: 40px; height: 40px;">
+                        <span class="material-symbols-rounded">add</span>
+                    </label>
+                    <input type="file" id="folder-input" webkitdirectory directory multiple>
+                    <button id="settings-btn" class="icon-btn">
+                        <span class="material-symbols-rounded">settings</span>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="playlist-controls">
+                <div class="playlist-sort">
+                    <select id="sort-select">
+                        <option value="title">Sort by Title</option>
+                        <option value="artist">Sort by Artist</option>
+                        <option value="album">Sort by Album</option>
+                        <option value="duration">Sort by Duration</option>
+                    </select>
+                </div>
+                <div class="search-box">
+                    <input type="text" id="search-input" placeholder="Search by title, artist, album, decade (e.g., 80's) or type 'fav'">
+                </div>
+            </div>
+
+            <div class="playlist-tabs">
+                <button class="tab-btn active" data-tab="main">Main Playlist</button>
+                <button class="tab-btn" data-tab="queue">Queue</button>
+                <button class="tab-btn" data-tab="recent">Recently Played</button>
+            </div>
+
+            <input type="file" id="file-input" accept="audio/*" multiple>
+            <div class="playlist" id="playlist"></div>
+            <div class="playlist" id="queue-list" style="display: none;"></div>
+            <div class="playlist" id="recent-list" style="display: none;"></div>
+        </div>
+        
+        <div class="player-section">
+            <div class="now-playing">
+                <div class="album-art">
+                    <img id="cover-art" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=" alt="Album art">
+                </div>
+                <div class="song-metadata">
+                    <h3 id="current-song">No song selected</h3>
+                    <p id="artist-name">Unknown Artist</p>
+                    <p id="album-name">Unknown Album</p>
+                </div>
+                <div class="song-info">
+                    <span id="current-time">0:00</span>
+                    <input type="range" id="progress-bar" min="0" max="100" value="0">
+                    <span id="duration">0:00</span>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <button id="prev-btn"><span class="material-symbols-rounded">skip_previous</span></button>
+                <button id="play-btn"><span class="material-symbols-rounded">play_arrow</span></button>
+                <button id="next-btn"><span class="material-symbols-rounded">skip_next</span></button>
+                <button id="shuffle-btn"><span class="material-symbols-rounded">shuffle</span></button>
+                <button id="loop-btn"><span class="material-symbols-rounded">repeat</span></button>
+                <span class="material-symbols-rounded volume-icon">volume_up</span>
+                <input type="range" id="volume" min="0" max="100" value="100">
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Settings Panel -->
+    <div class="settings-panel" id="settings-panel">
+        <div class="settings-header">
+            <h3>Settings</h3>
+            <button id="close-settings-btn" class="icon-btn">
+                <span class="material-symbols-rounded">close</span>
+            </button>
+        </div>
+        
+        <div class="settings-content">
+            <section class="settings-section">
+                <h4>Appearance</h4>
+                <div class="setting-item theme-selector">
+                    <label for="settings-theme-select">Theme</label>
+                    <select id="settings-theme-select">
+                        <option value="adaptive">Adaptive</option>
+                        <option value="fluid">Fluid</option>
+                        <option value="dark">Dark</option>
+                        <option value="spotify">Spotify</option>
+                        <option value="purple">Purple Night</option>
+                        <option value="ocean">Ocean Blue</option>
+                        <option value="sunset">Sunset</option>
+                    </select>
+                </div>
+                <div class="setting-item">
+                    <label for="font-size">Font Size</label>
+                    <select id="font-size">
+                        <option value="small">Small</option>
+                        <option value="medium" selected>Medium</option>
+                        <option value="large">Large</option>
+                    </select>
+                </div>
+            </section>
+
+            <section class="settings-section">
+                <h4>Accessibility</h4>
+                <div class="setting-item">
+                    <label for="high-contrast">High Contrast</label>
+                    <input type="checkbox" id="high-contrast">
+                </div>
+                <div class="setting-item">
+                    <label for="reduce-animations">Reduce Animations</label>
+                    <input type="checkbox" id="reduce-animations">
+                </div>
+            </section>
+
+            <section class="settings-section">
+                <h4>Playback</h4>
+                <div class="setting-item">
+                    <label for="default-volume">Default Volume</label>
+                    <input type="range" id="default-volume" min="0" max="100" value="100">
+                </div>
+                <div class="setting-item">
+                    <label for="autoplay">Autoplay</label>
+                    <input type="checkbox" id="autoplay">
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <audio id="audio-player"></audio>
+    <script>
+        // Verify jsmediatags loaded
+        window.addEventListener('load', () => {
+            if (typeof jsmediatags === 'undefined') {
+                console.error('Failed to load jsmediatags library!');
+            } else {
+                console.log('jsmediatags library loaded successfully');
+            }
+        });
+    </script>
+    <script src="main.js" defer></script>
+</body>
+</html>
