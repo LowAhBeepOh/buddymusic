@@ -1,4 +1,4 @@
-# buddymusic
+# Buddy Music
 An offline music from the Buddy project / ecosystem
 
 ## How to use
