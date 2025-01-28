@@ -151,6 +151,15 @@
                 console.log('jsmediatags library loaded successfully');
             }
         });
+
+        // Add contextmenu event listener for right-clicking songs
+        document.addEventListener('contextmenu', (event) => {
+            const songElement = event.target.closest('.playlist-item');
+            if (songElement) {
+                const songIndex = Array.from(songElement.parentElement.children).indexOf(songElement);
+                showExtendedOptions(event, songs[songIndex]);
+            }
+        });
     </script>
     <script src="main.js" defer></script>
 </body>

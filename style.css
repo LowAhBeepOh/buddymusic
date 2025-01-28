@@ -286,6 +286,11 @@ body {
     flex-grow: 1;
 }
 
+/* Hover scrubbing in progress bar */
+#progress-bar:hover {
+    cursor: pointer;
+}
+
 .controls {
     display: flex;
     gap: 15px;
@@ -319,7 +324,7 @@ input[type="range"] {
     border-radius: 5px;
     height: 5px;
     cursor: pointer;
-    transition: background 0.2s ease; /* Smoother transition */
+    transition: background 0.3s cubic-bezier(0.4, 0, 0.2, 1); /* Smoother transition */
 }
 
 input[type="range"]::-webkit-slider-thumb {
@@ -330,7 +335,7 @@ input[type="range"]::-webkit-slider-thumb {
     background: var(--accent-color);
     cursor: pointer;
     border: none;
-    transition: background 0.2s ease; /* Smoother transition */
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); /* Smoother transition */
 }
 
 input[type="range"]::-moz-range-thumb {
@@ -340,7 +345,7 @@ input[type="range"]::-moz-range-thumb {
     background: var(--accent-color);
     cursor: pointer;
     border: none;
-    transition: background 0.2s ease; /* Smoother transition */
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); /* Smoother transition */
 }
 
 input[type="range"]:focus {
@@ -417,6 +422,16 @@ select:focus {
     border-radius: 10px;
     overflow: hidden;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    transition: width 0.3s ease, height 0.3s ease, transform 0.3s ease;
+}
+
+/* Maximize album art */
+.album-art.maximized {
+    width: 80%;
+    height: auto;
+    max-width: 400px;
+    max-height: 400px;
+    transition: width 0.3s ease, height 0.3s ease, transform 0.3s ease;
 }
 
 .album-art img {
@@ -435,6 +450,25 @@ select:focus {
     opacity: 0.7;
     font-size: 0.9em;
     color: var(--text-tint);
+}
+
+/* Scroll song title if too long */
+.song-metadata h3 {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.song-metadata h3.scroll {
+    animation: scroll 10s linear infinite;
+}
+
+@keyframes scroll {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-100%); }
 }
 
 .theme-selector {
@@ -798,6 +832,21 @@ select:focus {
     font-weight: 700; /* Make text slightly bolder for better readability */
     animation: weightPulse 0.6s cubic-bezier(0.4, 0, 0.2, 1);
     font-variation-settings: 'wght' 600;
+}
+
+/* Add to the existing adaptive theme transitions */
+[data-theme="adaptive"] {
+    transition: 
+        --bg-primary 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+        --bg-secondary 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+        --bg-tertiary 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+        --text-primary 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+        --text-secondary 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+        --accent-color 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+        --hover-color 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+        background-color 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+        color 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+        border-color 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .queue-list {

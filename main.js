@@ -33,6 +33,17 @@ document.addEventListener('DOMContentLoaded', () => {
         folderInput: document.getElementById('folder-input')
     };
 
+    let audioContext;
+    let analyser;
+    let dataArray;
+    let baseColors = {
+        primary: [30, 30, 30],
+        secondary: [45, 45, 45],
+        darkest: [20, 20, 20],
+        lightest: [255, 255, 255],
+        mostColorful: [100, 100, 100]
+    };
+
     // Improved version that provides better color sampling and analysis
     function getImageColors(imgElement) {
         return new Promise((resolve) => {
@@ -86,6 +97,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 .sort((a, b) => b[1] - a[1])
                 .map(([color]) => color.split(',').map(Number));
             
+            baseColors = {
+                primary: sortedColors[0] || [30, 30, 30],
+                secondary: sortedColors[1] || [45, 45, 45],
+                darkest: darkest,
+                lightest: lightest,
+                mostColorful: mostColorful
+            };
+
             resolve({
                 primary: adjustColorBrightness(sortedColors[0]) || [30, 30, 30],
                 secondary: adjustColorBrightness(sortedColors[1] || sortedColors[0]) || [45, 45, 45],
@@ -524,19 +543,104 @@ document.addEventListener('DOMContentLoaded', () => {
         if (elements.audioPlayer) {
             const url = URL.createObjectURL(file);
             elements.audioPlayer.src = url;
+            
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = 256;
+                const source = audioContext.createMediaElementSource(elements.audioPlayer);
+                source.connect(analyser);
+                analyser.connect(audioContext.destination);
+                dataArray = new Uint8Array(analyser.frequencyBinCount);
+            }
+
+            if (document.documentElement.getAttribute('data-theme') === 'adaptive') {
+                startVisualization();
+            }
+
             highlightCurrentSong();
             playAudio();
         }
     }
 
-    if ('mediaSession' in navigator) {
-        navigator.mediaSession.setActionHandler('play', playAudio);
-        navigator.mediaSession.setActionHandler('pause', pauseAudio);
-        navigator.mediaSession.setActionHandler('previoustrack', () => {
-            if (currentSongIndex > 0) loadSong(currentSongIndex - 1);
-            else loadSong(songs.length - 1);
-        });
-        navigator.mediaSession.setActionHandler('nexttrack', playNext);
+    // Update startVisualization function
+    function startVisualization() {
+        if (!analyser) return;
+        
+        let currentColors = { ...baseColors };
+        const fadeSpeed = 0.97; // Slower fade
+        let prevIntensity = 0;
+        let prevBassBoost = 0;
+        const smoothingFactor = 0.15;
+        
+        function updateColors() {
+            if (document.documentElement.getAttribute('data-theme') !== 'adaptive') {
+                return;
+            }
+
+            // Handle fade back to base colors when not playing
+            if (!isPlaying) {
+                const fadingSpeed = 0.98;
+                currentColors = {
+                    primary: interpolateColors(currentColors.primary, baseColors.primary, fadingSpeed),
+                    secondary: interpolateColors(currentColors.secondary, baseColors.secondary, fadingSpeed),
+                    darkest: interpolateColors(currentColors.darkest, baseColors.darkest, fadingSpeed),
+                    lightest: baseColors.lightest,
+                    mostColorful: interpolateColors(currentColors.mostColorful, baseColors.mostColorful, fadingSpeed)
+                };
+
+                // Continue animation until colors are back to base
+                if (!isColorsSimilar(currentColors, baseColors)) {
+                    requestAnimationFrame(() => {
+                        updateAdaptiveTheme(currentColors);
+                        requestAnimationFrame(updateColors);
+                    });
+                }
+                return;
+            }
+
+            analyser.getByteFrequencyData(dataArray);
+            
+            const average = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
+            const bassIntensity = dataArray.slice(0, 4).reduce((a, b) => a + b, 0) / 4;
+            
+            // Smooth out the intensity changes
+            const targetIntensity = Math.min(average / 128, 1) * 0.3; // Reduced intensity
+            const targetBassBoost = Math.min(bassIntensity / 200, 1) * 0.2; // Reduced bass boost
+            
+            prevIntensity = prevIntensity + (targetIntensity - prevIntensity) * smoothingFactor;
+            prevBassBoost = prevBassBoost + (targetBassBoost - prevBassBoost) * smoothingFactor;
+
+            currentColors = {
+                primary: interpolateColors(currentColors.primary, baseColors.primary),
+                secondary: interpolateColors(currentColors.secondary, baseColors.secondary),
+                darkest: interpolateColors(currentColors.darkest, 
+                    baseColors.darkest.map(c => Math.min(255, c + prevBassBoost * 30))),
+                lightest: baseColors.lightest,
+                mostColorful: interpolateColors(currentColors.mostColorful, 
+                    baseColors.mostColorful.map(c => Math.min(255, c + prevIntensity * 40)))
+            };
+
+            requestAnimationFrame(() => {
+                updateAdaptiveTheme(currentColors);
+                requestAnimationFrame(updateColors);
+            });
+        }
+
+        function interpolateColors(current, target, speed = fadeSpeed) {
+            return current.map((c, i) => {
+                const targetValue = Math.min(255, target[i]);
+                return c + (targetValue - c) * (1 - speed);
+            });
+        }
+
+        function isColorsSimilar(colors1, colors2, threshold = 2) {
+            return ['primary', 'secondary', 'darkest', 'mostColorful'].every(key => {
+                return colors1[key].every((c, i) => Math.abs(c - colors2[key][i]) < threshold);
+            });
+        }
+
+        requestAnimationFrame(updateColors);
     }
 
     function highlightCurrentSong() {
@@ -692,6 +796,45 @@ document.addEventListener('DOMContentLoaded', () => {
     elements.volumeControl.addEventListener('input', (e) => {
         elements.audioPlayer.volume = e.target.value / 100;
     });
+
+    // Double-click volume slider to reset to 100%
+    elements.volumeControl.addEventListener('dblclick', () => {
+        elements.volumeControl.value = 100;
+        elements.audioPlayer.volume = 1;
+    });
+
+    // Right-click song for extended options
+    function showExtendedOptions(event, song) {
+        event.preventDefault();
+        // Implement extended options logic here
+        console.log('Extended options for:', song.metadata.title);
+    }
+
+    // Hover scrubbing in progress bar
+    elements.progressBar.addEventListener('mousemove', (e) => {
+        if (e.buttons === 1) {
+            const rect = elements.progressBar.getBoundingClientRect();
+            const percentage = (e.clientX - rect.left) / rect.width;
+            elements.audioPlayer.currentTime = percentage * elements.audioPlayer.duration;
+        }
+    });
+
+    // Click album art to maximize
+    elements.coverArt.addEventListener('click', () => {
+        elements.coverArt.parentElement.classList.toggle('maximized');
+    });
+
+    // Scroll song title if too long
+    function updateSongTitleScroll() {
+        const titleElement = elements.currentSongTitle;
+        if (titleElement.scrollWidth > titleElement.clientWidth) {
+            titleElement.classList.add('scroll');
+        } else {
+            titleElement.classList.remove('scroll');
+        }
+    }
+
+    elements.audioPlayer.addEventListener('loadedmetadata', updateSongTitleScroll);
 
     function formatTime(seconds) {
         const minutes = Math.floor(seconds / 60);
