@@ -1,3 +1,4 @@
+/* Theme definitions */
 :root[data-theme="fluid"] {
     --bg-primary: linear-gradient(135deg, #1a1f35 0%, #212b46 100%);
     --bg-secondary: linear-gradient(135deg, #2a3b5c 0%, #3a4b7c 100%); /* More saturated */
@@ -59,7 +60,7 @@
     --hover-color: #583333;
 }
 
-/* Add adaptive theme */
+/* Adaptive theme with transitions */
 :root[data-theme="adaptive"] {
     --bg-primary: var(--adaptive-primary, #1a1a2a);  /* Darker with slight blue tint */
     --bg-secondary: var(--adaptive-secondary, #252535);  /* Darker with slight blue tint */
@@ -84,7 +85,7 @@
         border-color 0.5s ease-in-out;
 }
 
-/* Add overlay colors for elements */
+/* Base overlay colors */
 :root {
     --overlay-light: rgba(0, 0, 0, 0.1);
     --overlay-medium: rgba(0, 0, 0, 0.2);
@@ -131,7 +132,7 @@ body {
     padding-right: 10px;
 }
 
-/* Webkit scrollbar styling */
+/* Webkit scrollbar compatibility */
 .playlist::-webkit-scrollbar {
     width: 8px;
 }
@@ -171,7 +172,7 @@ body {
     background: var(--scrollbar-thumb-hover);
 }
 
-/* Firefox scrollbar styling */
+/* Firefox scrollbar compatibility */
 .playlist {
     scrollbar-width: thin;
     scrollbar-color: var(--bg-tertiary) var(--bg-secondary);
@@ -227,7 +228,6 @@ body {
     flex-shrink: 0;
 }
 
-/* Add new styles */
 .favorite-btn {
     position: absolute;
     right: 8px; /* Adjusted position */
@@ -312,7 +312,6 @@ input[type="range"] {
     width: 100px;
 }
 
-/* Styled Input Elements */
 input[type="range"] {
     -webkit-appearance: none;
     appearance: none;
@@ -438,7 +437,6 @@ select:focus {
     color: var(--text-tint);
 }
 
-/* Theme selector styles */
 .theme-selector {
     width: 100%;
 }
@@ -458,7 +456,6 @@ select:focus {
     cursor: pointer;
 }
 
-/* Playlist controls styles */
 .playlist-controls {
     margin: 10px 0;
     padding: 10px;
@@ -497,7 +494,7 @@ select:focus {
     padding: 8px;
     margin: 5px 0;
     background-color: var(--overlay-strong);
-    color: var(--text-primary);
+    color: var (--text-primary);
     border: 1px solid var(--bg-tertiary);
     border-radius: 4px;
 }
@@ -523,7 +520,6 @@ select:focus {
     color: var(--text-primary);
 }
 
-/* Settings panel styles */
 .sidebar-header {
     display: flex;
     justify-content: space-between;
@@ -623,13 +619,13 @@ select:focus {
     accent-color: var(--accent-color);
 }
 
-/* Add for reduced animations */
+/* Accessibility: Reduced motion */
 [data-reduce-animations="true"] * {
     transition: none !important;
     animation: none !important;
 }
 
-/* Add for high contrast */
+/* Accessibility: High contrast */
 [data-high-contrast="true"] {
     --text-secondary: #ffffff;
     --hover-color: #000000;
@@ -648,7 +644,6 @@ select:focus {
     font-size: 18px;
 }
 
-/* Update existing styles to support gradients */
 [data-theme="fluid"] .sidebar {
     background: linear-gradient(180deg, 
         var(--bg-secondary) 0%,
@@ -805,7 +800,6 @@ select:focus {
     font-variation-settings: 'wght' 600;
 }
 
-/* Add styles for the queue list */
 .queue-list {
     margin-top: 20px;
     overflow-y: auto;
@@ -815,7 +809,6 @@ select:focus {
     padding-right: 10px;
 }
 
-/* Add styles for queue feedback and empty message */
 .queue-feedback {
     position: absolute;
     right: 40px;
@@ -862,7 +855,6 @@ select:focus {
     to { opacity: 0; }
 }
 
-/* Add styles for the new button */
 .add-all-to-queue {
     position: sticky;
     bottom: 0;

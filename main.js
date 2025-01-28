@@ -33,21 +33,18 @@ document.addEventListener('DOMContentLoaded', () => {
         folderInput: document.getElementById('folder-input')
     };
 
-    // Replace the getImageColors function with this improved version
+    // Improved version that provides better color sampling and analysis
     function getImageColors(imgElement) {
         return new Promise((resolve) => {
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
             
-            // Set fixed size for consistent color sampling
             canvas.width = 300;
             canvas.height = 300;
             
-            // Use better image smoothing
             ctx.imageSmoothingEnabled = true;
             ctx.imageSmoothingQuality = 'high';
             
-            // Draw image with proper scaling
             ctx.drawImage(imgElement, 0, 0, canvas.width, canvas.height);
             
             const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
@@ -57,33 +54,27 @@ document.addEventListener('DOMContentLoaded', () => {
             let mostColorful = [0, 0, 0];
             let maxColorfulness = 0;
             
-            // Process every pixel
             for (let i = 0; i < imageData.length; i += 4) {
                 const r = imageData[i];
                 const g = imageData[i + 1];
                 const b = imageData[i + 2];
                 const a = imageData[i + 3];
                 
-                // Skip transparent pixels
                 if (a < 128) continue;
                 
                 const key = `${r},${g},${b}`;
                 colors.set(key, (colors.get(key) || 0) + 1);
                 
-                // Calculate brightness
                 const brightness = (r * 299 + g * 587 + b * 114) / 1000;
                 
-                // Update darkest color
                 if (brightness < ((darkest[0] * 299 + darkest[1] * 587 + darkest[2] * 114) / 1000)) {
                     darkest = [r, g, b];
                 }
                 
-                // Update lightest color
                 if (brightness > ((lightest[0] * 299 + lightest[1] * 587 + lightest[2] * 114) / 1000)) {
                     lightest = [r, g, b];
                 }
                 
-                // Calculate colorfulness
                 const colorfulness = Math.sqrt((r - g) ** 2 + (r - b) ** 2 + (g - b) ** 2);
                 if (colorfulness > maxColorfulness) {
                     maxColorfulness = colorfulness;
@@ -91,12 +82,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
             
-            // Get the two most common colors
             const sortedColors = Array.from(colors.entries())
                 .sort((a, b) => b[1] - a[1])
                 .map(([color]) => color.split(',').map(Number));
             
-            // Update the resolve section
             resolve({
                 primary: adjustColorBrightness(sortedColors[0]) || [30, 30, 30],
                 secondary: adjustColorBrightness(sortedColors[1] || sortedColors[0]) || [45, 45, 45],
@@ -107,28 +96,24 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Update the adjustColorBrightness function
+    // Adjusts color brightness while maintaining color saturation
     function adjustColorBrightness(color) {
-        if (!color) return [25, 25, 35]; // Darker default with slight blue tint
+        if (!color) return [25, 25, 35];
         const brightness = (color[0] * 299 + color[1] * 587 + color[2] * 114) / 1000;
         const maxBrightness = 255;
         
-        // If color is too bright, create a darker version
         if (brightness > maxBrightness / 2) {
-            // More aggressive darkening for stronger colors
             const darknessFactor = Math.min(0.25, 0.8 - (brightness / maxBrightness));
-            // Preserve some color saturation while darkening
             return color.map(c => {
                 const darkened = Math.max(15, Math.round(c * darknessFactor));
-                const saturated = darkened * 1.2; // Increase saturation
+                const saturated = darkened * 1.2;
                 return Math.min(255, Math.round(saturated));
             });
         }
-        // For already dark colors, enhance saturation slightly
         return color.map(c => Math.min(255, Math.round(c * 1.1)));
     }
 
-    // Add these helper functions at the top of the file
+    // Helper functions for calculating color contrast ratios
     function calculateContrast(rgb1, rgb2) {
         const luminance1 = calculateLuminance(rgb1);
         const luminance2 = calculateLuminance(rgb2);
@@ -145,19 +130,17 @@ document.addEventListener('DOMContentLoaded', () => {
         return 0.2126 * r + 0.7152 * g + 0.0722 * b;
     }
 
-    // Update the adjustColorContrast function with higher contrast requirements
-    function adjustColorContrast(backgroundColor, textColor, minContrast = 7.5) { // Increased from 7 to 7.5
+    // Ensures text remains readable by maintaining minimum contrast ratio
+    function adjustColorContrast(backgroundColor, textColor, minContrast = 7.5) {
         let adjustedText = [...textColor];
         let contrast = calculateContrast(backgroundColor, adjustedText);
         let attempts = 0;
         
-        while (contrast < minContrast && attempts < 100) { // Increased max attempts
+        while (contrast < minContrast && attempts < 100) {
             if (calculateLuminance(backgroundColor) > 0.5) {
-                // For light backgrounds, make text darker more aggressively
-                adjustedText = adjustedText.map(c => Math.max(0, c - 40)); // Increased step size
+                adjustedText = adjustedText.map(c => Math.max(0, c - 40));
             } else {
-                // For dark backgrounds, make text lighter more aggressively
-                adjustedText = adjustedText.map(c => Math.min(255, c + 40)); // Increased step size
+                adjustedText = adjustedText.map(c => Math.min(255, c + 40));
             }
             contrast = calculateContrast(backgroundColor, adjustedText);
             attempts++;
@@ -166,29 +149,25 @@ document.addEventListener('DOMContentLoaded', () => {
         return adjustedText;
     }
 
-    // Replace the updateAdaptiveTheme function with this fixed version
+    // Updates theme colors based on album art while ensuring accessibility
     function updateAdaptiveTheme(colorData) {
         const root = document.documentElement;
         let { primary, secondary, darkest, lightest, mostColorful } = colorData;
         
-        // Ensure background colors are 35% brightness
         primary = adjustColorBrightnessToPercentage(primary, 0.35);
         secondary = adjustColorBrightnessToPercentage(secondary, 0.35);
         
-        // If darkest color is too light, create artificial dark version
         const darkestBrightness = (darkest[0] * 299 + darkest[1] * 587 + darkest[2] * 114) / 1000;
         if (darkestBrightness > 128) {
             darkest = primary.map(c => Math.max(20, Math.round(c * 0.3)));
         }
         
-        // Ensure text colors have good contrast
         const isDarkBackground = calculateLuminance(darkest) < 0.5;
         const textColor = isDarkBackground ? [255, 255, 255] : [0, 0, 0];
-        lightest = adjustColorContrast(darkest, textColor, 8); // Increased contrast ratio
+        lightest = adjustColorContrast(darkest, textColor, 8);
         const adjustedSecondaryText = adjustColorContrast(secondary, textColor, 7);
-        const textTint = adjustColorContrast(darkest, mostColorful, 8); // Ensure good contrast
+        const textTint = adjustColorContrast(darkest, mostColorful, 8);
         
-        // Ensure sidebar gradient colors comply with AAA contrast rule
         const sidebarPrimary = adjustColorContrast(darkest, primary, 7);
         const sidebarSecondary = adjustColorContrast(darkest, secondary, 7);
         
@@ -200,13 +179,12 @@ document.addEventListener('DOMContentLoaded', () => {
             '--bg-secondary': `linear-gradient(135deg, ${toHex(sidebarPrimary)} 0%, ${toHex(sidebarSecondary)} 100%)`,
             '--bg-tertiary': `linear-gradient(135deg, ${toHex(sidebarSecondary)} 0%, ${toHex(adjustColorBrightness(sidebarSecondary))} 100%)`,
             '--text-primary': toHex(lightest),
-            '--text-secondary': toRGBA(adjustedSecondaryText, 0.8), // Increased opacity
+            '--text-secondary': toRGBA(adjustedSecondaryText, 0.8),
             '--accent-color': toHex(lightest),
-            '--hover-color': toRGBA(secondary, 0.4), // Increased opacity
+            '--hover-color': toRGBA(secondary, 0.4),
             '--text-tint': toHex(textTint)
         };
 
-        // Update CSS variables with requestAnimationFrame for smooth transitions
         requestAnimationFrame(() => {
             Object.entries(cssVariables).forEach(([property, value]) => {
                 root.style.setProperty(property, value);
@@ -220,7 +198,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return color.map(c => Math.min(255, Math.round(c * factor)));
     }
 
-    // Validate that all elements were found
+    // Element validation
     for (const [key, element] of Object.entries(elements)) {
         if (!element) {
             console.error(`Element not found: ${key}`);
@@ -231,12 +209,11 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentSongIndex = 0;
     let isPlaying = false;
     let isShuffled = false;
-    let loopState = 'none'; // none -> single -> all
+    let loopState = 'none';
     let queue = [];
     let recentlyPlayed = [];
     let currentPlaylist = 'main';
 
-    // Add favorites management
     let favorites = new Set(JSON.parse(localStorage.getItem('buddy-music-favorites') || '[]'));
 
     function saveFavorites() {
@@ -244,7 +221,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function toggleFavorite(event, songMetadata) {
-        event.stopPropagation(); // Prevent triggering playlist item click
+        event.stopPropagation();
         const key = `${songMetadata.title}|||${songMetadata.artist}`;
         const btn = event.currentTarget;
         
@@ -265,8 +242,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     elements.fileInput.addEventListener('change', async (e) => {
         const files = Array.from(e.target.files);
-        songs = [];  // Clear existing songs
-        await updatePlaylist(files);  // Wait for metadata to be loaded
+        songs = [];
+        await updatePlaylist(files);
         if (songs.length > 0) loadSong(0);
     });
 
@@ -324,8 +301,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function getDefaultMetadata(file) {
-        // Try to parse filename for potential metadata
-        const filename = file.name.replace(/\.[^/.]+$/, ""); // Remove extension
+        const filename = file.name.replace(/\.[^/.]+$/, "");
         const parts = filename.split(' - ').map(part => part.trim());
         
         if (parts.length >= 2) {
@@ -347,16 +323,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function cleanMetadata(value) {
         if (!value) return null;
-        // Clean up common metadata issues
         const cleaned = value
-            .replace(/\0/g, '')        // Remove null bytes
-            .replace(/^\s+|\s+$/g, '') // Trim whitespace
-            .replace(/\s+/g, ' ');     // Normalize spaces
+            .replace(/\0/g, '')
+            .replace(/^\s+|\s+$/g, '')
+            .replace(/\s+/g, ' ');
         
         return cleaned || null;
     }
 
-    // Update the updatePlaylist function to initialize visibleSongs
     async function updatePlaylist(files) {
         const startIndex = songs.length;
         for (let i = 0; i < files.length; i++) {
@@ -365,10 +339,8 @@ document.addEventListener('DOMContentLoaded', () => {
             songs.push({ file, metadata });
         }
         
-        // Initialize visibleSongs after adding new songs
         visibleSongs = [...songs];
         
-        // Update the view
         updatePlaylistView(visibleSongs);
     }
 
@@ -384,11 +356,9 @@ document.addEventListener('DOMContentLoaded', () => {
             </button>
         `;
         
-        // Add context menu for queue
         div.addEventListener('contextmenu', (e) => {
             e.preventDefault();
             addToQueue(index);
-            // Show quick feedback
             const feedback = document.createElement('div');
             feedback.className = 'queue-feedback';
             feedback.textContent = 'Added to queue';
@@ -396,10 +366,8 @@ document.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => feedback.remove(), 1000);
         });
         
-        // Add click handler for the main playlist item
         div.addEventListener('click', () => clickHandler(index));
         
-        // Add click handler for the favorite button
         const favoriteBtn = div.querySelector('.favorite-btn');
         favoriteBtn.addEventListener('click', (e) => toggleFavorite(e, song.metadata));
         
@@ -430,7 +398,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 song,
                 index,
                 () => {
-                    // Play song and remove it from queue
                     const songIndex = songs.indexOf(song);
                     loadSong(songIndex);
                     queue.splice(index, 1);
@@ -438,7 +405,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             );
             
-            // Add remove from queue button
             const removeBtn = document.createElement('button');
             removeBtn.className = 'remove-queue-btn';
             removeBtn.innerHTML = '<span class="material-symbols-rounded">remove_circle</span>';
@@ -453,12 +419,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Update the loadSong function to handle adaptive theme transitions
     const originalLoadSong = loadSong;
     loadSong = async function(index) {
         const song = songs[index];
         if (song) {
-            // Update colors before playing the song
             if (document.documentElement.getAttribute('data-theme') === 'adaptive') {
                 if (song.metadata.coverUrl) {
                     const img = new Image();
@@ -475,7 +439,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         });
                     };
                     
-                    // Wait for image to load and colors to be updated before playing
                     await new Promise((resolve) => {
                         img.onload = async () => {
                             requestAnimationFrame(async () => {
@@ -489,7 +452,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
             
-            // Now continue with the original song loading
             originalLoadSong.call(this, index);
             addToRecentlyPlayed(song);
         }
@@ -497,9 +459,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let currentlyPlayingSongId = null;
 
-    // Update loadSong function to be more resilient
     function loadSong(index) {
-        // If no visible songs, try using all songs
         if (!visibleSongs?.length) {
             visibleSongs = [...songs];
         }
@@ -521,14 +481,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const metadata = targetSong.metadata;
         const file = targetSong.file;
         
-        // Create a unique ID for the song
         const songId = `${metadata.title}|||${metadata.artist}|||${metadata.album}`;
         
-        // Check if this is a different song
         if (songId !== currentlyPlayingSongId) {
             currentlyPlayingSongId = songId;
             
-            // If using adaptive theme, update colors for new song
             if (document.documentElement.getAttribute('data-theme') === 'adaptive' && metadata.coverUrl) {
                 const img = new Image();
                 img.crossOrigin = "Anonymous";
@@ -548,7 +505,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         
-        // Update UI
         if (elements.currentSongTitle) elements.currentSongTitle.textContent = metadata.title;
         if (elements.artistName) elements.artistName.textContent = metadata.artist;
         if (elements.albumName) elements.albumName.textContent = metadata.album;
@@ -556,7 +512,6 @@ document.addEventListener('DOMContentLoaded', () => {
             elements.coverArt.src = metadata.coverUrl || 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
         }
 
-        // Update Media Session API
         if ('mediaSession' in navigator) {
             navigator.mediaSession.metadata = new MediaMetadata({
                 title: metadata.title,
@@ -574,7 +529,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Add Media Session API controls
     if ('mediaSession' in navigator) {
         navigator.mediaSession.setActionHandler('play', playAudio);
         navigator.mediaSession.setActionHandler('pause', pauseAudio);
@@ -745,7 +699,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
     }
 
-    // Theme handling
     function initializeTheme() {
         const savedTheme = localStorage.getItem('buddy-music-theme') || 'dark';
         document.documentElement.setAttribute('data-theme', savedTheme);
@@ -759,12 +712,10 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('buddy-music-theme', themeName);
     }
 
-    // Also update the theme change listener to handle immediate color updates
     elements.themeSelect.addEventListener('change', (e) => {
         const newTheme = e.target.value;
         changeTheme(newTheme);
         
-        // If switching to adaptive theme, update colors immediately
         if (newTheme === 'adaptive' && songs[currentSongIndex]?.metadata?.coverUrl) {
             const img = new Image();
             img.crossOrigin = "Anonymous";
@@ -778,7 +729,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initializeTheme();
 
-    // Playlist Management Functions
     function savePlaylist() {
         const playlistData = {
             songs: songs.map(song => ({
@@ -802,14 +752,13 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const text = await file.text();
             const data = JSON.parse(text);
-            // Implementation needed: Handle loaded playlist
         } catch (e) {
             console.error('Error loading playlist:', e);
         }
     }
 
     function sortPlaylist(criterion) {
-        const sortedSongs = [...songs]; // Create a copy to sort
+        const sortedSongs = [...songs];
         
         sortedSongs.sort((a, b) => {
             switch(criterion) {
@@ -820,7 +769,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 case 'album':
                     return (a.metadata.album || '').localeCompare(b.metadata.album || '');
                 case 'duration':
-                    // Get duration only when needed
                     if (!a.duration) a.duration = getDuration(a.file);
                     if (!b.duration) b.duration = getDuration(b.file);
                     return (a.duration || 0) - (b.duration || 0);
@@ -829,7 +777,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // Update the display without modifying original array
         updatePlaylistView(sortedSongs);
     }
 
@@ -846,11 +793,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Update the event listener to handle async duration sorting
     elements.sortSelect.addEventListener('change', async (e) => {
         const criterion = e.target.value;
         if (criterion === 'duration') {
-            // Load all durations first
             for (let song of songs) {
                 if (!song.duration) {
                     song.duration = await getDuration(song.file);
@@ -860,13 +805,11 @@ document.addEventListener('DOMContentLoaded', () => {
         sortPlaylist(criterion);
     });
 
-    // Add a new variable to track visible songs
     let visibleSongs = [...songs];
 
-    // Update the updatePlaylistView function to handle both arrays and maintain current song highlight
     function updatePlaylistView(songList) {
         elements.playlist.innerHTML = '';
-        visibleSongs = songList; // Update visible songs whenever the view changes
+        visibleSongs = songList;
         
         songList.forEach((song, index) => {
             const div = createPlaylistItem(
@@ -882,10 +825,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     elements.searchInput.addEventListener('input', (e) => {
-        filterPlaylist(e.target.value || ''); // Ensure value is never undefined
+        filterPlaylist(e.target.value || '');
     });
 
-    // Remove the filterType parameter and always search all fields
     function filterPlaylist(searchTerm) {
         if (!searchTerm) {
             updatePlaylistView(songs);
@@ -896,13 +838,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const searchLower = searchTerm.toLowerCase().trim();
         let filtered = [];
 
-        // Store current search term and criteria for the queue functionality
         window.currentSearch = {
             term: searchLower,
             type: 'regular'
         };
 
-        // Handle decade searches
         const decadeMatch = searchLower.match(/(\d{2})'s?/);
         if (decadeMatch) {
             const decade = decadeMatch[1];
@@ -919,12 +859,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 return songYear >= window.currentSearch.startYear && songYear < window.currentSearch.endYear;
             });
         }
-        // Handle favorite searches
         else if (searchLower === 'fav' || searchLower === 'favorite' || searchLower === 'favorites') {
             window.currentSearch.type = 'favorites';
             filtered = songs.filter(song => isFavorite(song.metadata));
         }
-        // Regular search across all metadata
         else {
             filtered = songs.filter(song => {
                 const searchable = `
@@ -957,13 +895,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 Add all to queue (${filteredSongs.length} songs)
             `;
             addAllBtn.addEventListener('click', () => {
-                // Add only the filtered songs that aren't already in queue
                 const songsToAdd = filteredSongs.filter(song => !queue.includes(song));
                 if (songsToAdd.length > 0) {
                     queue.push(...songsToAdd);
                     updateQueueView();
                     
-                    // Show feedback
                     addAllBtn.innerHTML = '<span class="material-symbols-rounded">check</span> Added to queue!';
                     setTimeout(() => {
                         addAllBtn.innerHTML = `
@@ -1025,7 +961,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function addToRecentlyPlayed(song) {
-        recentlyPlayed = [song, ...recentlyPlayed.slice(0, 19)]; // Keep last 20
+        recentlyPlayed = [song, ...recentlyPlayed.slice(0, 19)];
         updateRecentlyPlayedView();
     }
 
@@ -1046,13 +982,11 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.classList.toggle('active', btn.dataset.tab === tab);
         });
         
-        // Show/hide appropriate playlist
         elements.playlist.style.display = tab === 'main' ? 'block' : 'none';
         elements.queueList.style.display = tab === 'queue' ? 'block' : 'none';
         elements.recentList.style.display = tab === 'recent' ? 'block' : 'none';
     }
 
-    // Replace both loadSong modifications with this single version
     loadSong = function(index) {
         const song = songs[index];
         if (song) {
@@ -1104,9 +1038,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Settings Management
     function initializeSettings() {
-        // Load saved settings or set defaults
         const settings = JSON.parse(localStorage.getItem('buddy-music-settings')) || {
             fontSize: 'medium',
             highContrast: false,
@@ -1115,10 +1047,8 @@ document.addEventListener('DOMContentLoaded', () => {
             autoplay: false
         };
 
-        // Apply settings
         applySettings(settings);
 
-        // Set initial values in form
         elements.fontSizeSelect.value = settings.fontSize;
         elements.highContrastToggle.checked = settings.highContrast;
         elements.reduceAnimationsToggle.checked = settings.reduceAnimations;
@@ -1147,7 +1077,6 @@ document.addEventListener('DOMContentLoaded', () => {
         applySettings(settings);
     }
 
-    // Settings Panel Event Listeners
     elements.settingsBtn.addEventListener('click', () => {
         elements.settingsPanel.classList.add('active');
     });
@@ -1156,7 +1085,6 @@ document.addEventListener('DOMContentLoaded', () => {
         elements.settingsPanel.classList.remove('active');
     });
 
-    // Settings Change Listeners
     [
         'fontSizeSelect',
         'highContrastToggle',
@@ -1167,10 +1095,8 @@ document.addEventListener('DOMContentLoaded', () => {
         elements[settingId].addEventListener('change', saveSettings);
     });
 
-    // Initialize settings
     initializeSettings();
 
-    // Add folder import handler
     elements.folderInput.addEventListener('change', async (e) => {
         const files = Array.from(e.target.files).filter(file => 
             file.type.startsWith('audio/') || 
@@ -1185,16 +1111,88 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Don't clear existing songs, just append new ones
         const startIndex = songs.length;
-        await updatePlaylist(files);  // Wait for metadata to be loaded
+        await updatePlaylist(files);
         
-        // Only start playing if this is the first batch of songs
         if (startIndex === 0 && songs.length > 0) {
             loadSong(0);
         }
         
-        // Clear the input to allow selecting the same folder again
         elements.folderInput.value = '';
+    });
+
+    // Add keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+        // Only handle shortcuts if not typing in an input field
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+        switch (e.code) {
+            case 'Space':
+                e.preventDefault(); // Prevent page scroll
+                if (isPlaying) pauseAudio();
+                else playAudio();
+                break;
+
+            case 'KeyM':
+                e.preventDefault();
+                elements.audioPlayer.muted = !elements.audioPlayer.muted;
+                break;
+
+            case 'ArrowLeft':
+                e.preventDefault();
+                if (elements.audioPlayer.currentTime >= 10) {
+                    elements.audioPlayer.currentTime -= 10;
+                } else {
+                    elements.audioPlayer.currentTime = 0;
+                }
+                break;
+
+            case 'ArrowRight':
+                e.preventDefault();
+                if (elements.audioPlayer.currentTime <= elements.audioPlayer.duration - 10) {
+                    elements.audioPlayer.currentTime += 10;
+                } else {
+                    elements.audioPlayer.currentTime = elements.audioPlayer.duration;
+                }
+                break;
+
+            case 'ArrowUp':
+                e.preventDefault();
+                const newVolUp = Math.min(1, elements.audioPlayer.volume + 0.1);
+                elements.audioPlayer.volume = newVolUp;
+                elements.volumeControl.value = newVolUp * 100;
+                break;
+
+            case 'ArrowDown':
+                e.preventDefault();
+                const newVolDown = Math.max(0, elements.audioPlayer.volume - 0.1);
+                elements.audioPlayer.volume = newVolDown;
+                elements.volumeControl.value = newVolDown * 100;
+                break;
+
+            case 'KeyN':
+                e.preventDefault();
+                playNext();
+                break;
+
+            case 'KeyP':
+                e.preventDefault();
+                if (currentSongIndex > 0) {
+                    loadSong(currentSongIndex - 1);
+                } else {
+                    loadSong(songs.length - 1);
+                }
+                break;
+
+            case 'KeyL':
+                e.preventDefault();
+                elements.loopBtn.click();
+                break;
+
+            case 'KeyS':
+                e.preventDefault();
+                elements.shuffleBtn.click();
+                break;
+        }
     });
 });
