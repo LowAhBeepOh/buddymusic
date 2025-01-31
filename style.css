@@ -528,9 +528,14 @@ select:focus {
     padding: 8px;
     margin: 5px 0;
     background-color: var(--overlay-strong);
-    color: var (--text-primary);
+    color: var(--text-primary);  /* Changed from default black to theme text color */
     border: 1px solid var(--bg-tertiary);
     border-radius: 4px;
+}
+
+.search-box input::placeholder {
+    color: var(--text-secondary);  /* Added to style the placeholder text */
+    opacity: 0.7;
 }
 
 .playlist-tabs {
@@ -930,4 +935,47 @@ select:focus {
 
 .add-all-to-queue .material-symbols-rounded {
     font-size: 20px;
+}
+
+.remove-from-queue {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 4px;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.playlist-item:hover .remove-from-queue {
+    opacity: 1;
+}
+
+.remove-from-queue:hover {
+    color: var(--text-primary);
+}
+
+.context-menu {
+    position: fixed;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 0;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+}
+
+.context-menu ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.context-menu li {
+    padding: 8px 16px;
+    cursor: pointer;
+}
+
+.context-menu li:hover {
+    background: var(--hover);
 }

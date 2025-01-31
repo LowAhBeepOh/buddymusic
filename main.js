@@ -949,6 +949,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     let visibleSongs = [...songs];
+    let tempSearchResults = []; // Add this at the top with other state variables
 
     function updatePlaylistView(songList) {
         elements.playlist.innerHTML = '';
@@ -975,6 +976,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!searchTerm) {
             updatePlaylistView(songs);
             hideAddAllToQueue();
+            tempSearchResults = []; // Clear temp results when search is empty
             return;
         }
 
@@ -1019,6 +1021,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
+        tempSearchResults = filtered; // Store filtered results
         updatePlaylistView(filtered);
         
         if (filtered.length > 0) {
@@ -1038,11 +1041,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 Add all to queue (${filteredSongs.length} songs)
             `;
             addAllBtn.addEventListener('click', () => {
-                const songsToAdd = filteredSongs.filter(song => !queue.includes(song));
+                const songsToAdd = tempSearchResults.filter(song => !queue.includes(song));
                 if (songsToAdd.length > 0) {
                     queue.push(...songsToAdd);
                     updateQueueView();
                     
+                    // Switch to queue tab to show the newly added songs
+                    switchTab('queue');
+                    
+                    // Update the button text temporarily
                     addAllBtn.innerHTML = '<span class="material-symbols-rounded">check</span> Added to queue!';
                     setTimeout(() => {
                         addAllBtn.innerHTML = `
@@ -1339,3 +1346,253 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
+
+class QueueManager {
+    constructor() {
+        this.queue = [];
+        this.history = [];
+        this.maxHistory = 50;
+    }
+
+    add(song) {
+        this.queue.push(song);
+        this.updateQueueDisplay();
+    }
+
+    addNext(song) {
+        this.queue.unshift(song);
+        this.updateQueueDisplay();
+    }
+
+    remove(index) {
+        if (index >= 0 && index < this.queue.length) {
+            this.queue.splice(index, 1);
+            this.updateQueueDisplay();
+        }
+    }
+
+    clear() {
+        this.queue = [];
+        this.updateQueueDisplay();
+    }
+
+    getNext() {
+        return this.queue.shift();
+    }
+
+    addToHistory(song) {
+        this.history.unshift(song);
+        if (this.history.length > this.maxHistory) {
+            this.history.pop();
+        }
+        this.updateRecentDisplay();
+    }
+
+    updateQueueDisplay() {
+        const queueList = document.getElementById('queue-list');
+        queueList.innerHTML = '';
+        
+        this.queue.forEach((song, index) => {
+            const item = document.createElement('div');
+            item.className = 'playlist-item';
+            item.innerHTML = `
+                <span class="song-title">${song.metadata.title}</span>
+                <span class="song-artist">${song.metadata.artist}</span>
+                <span class="song-duration">${formatTime(song.duration)}</span>
+                <button class="remove-from-queue" data-index="${index}">
+                    <span class="material-symbols-rounded">remove</span>
+                </button>
+            `;
+            queueList.appendChild(item);
+        });
+    }
+
+    updateRecentDisplay() {
+        const recentList = document.getElementById('recent-list');
+        recentList.innerHTML = '';
+        
+        this.history.forEach((song) => {
+            const item = document.createElement('div');
+            item.className = 'playlist-item';
+            item.innerHTML = `
+                <span class="song-title">${song.title}</span>
+                <span class="song-artist">${song.artist}</span>
+                <span class="song-duration">${formatTime(song.duration)}</span>
+            `;
+            recentList.appendChild(item);
+        });
+    }
+}
+
+const queueManager = new QueueManager();
+
+function playNext() {
+    if (!visibleSongs || !visibleSongs.length) return;
+    
+    if (queueManager.queue.length > 0) {
+        const nextSong = queueManager.getNext();
+        playSong(nextSong);
+        return;
+    }
+    
+    if (isShuffled) {
+        const currentVisibleIndex = visibleSongs.indexOf(songs[currentSongIndex]);
+        let nextIndex;
+        
+        do {
+            nextIndex = Math.floor(Math.random() * visibleSongs.length);
+        } while (nextIndex === currentVisibleIndex && visibleSongs.length > 1);
+        
+        loadSong(nextIndex);
+    } else {
+        const currentVisibleIndex = visibleSongs.indexOf(songs[currentSongIndex]);
+        if (currentVisibleIndex < visibleSongs.length - 1) {
+            loadSong(currentVisibleIndex + 1);
+        } else if (loopState === 'all') {
+            loadSong(0);
+        }
+    }
+}
+
+document.addEventListener('click', (e) => {
+    if (e.target.classList.contains('remove-from-queue')) {
+        const index = parseInt(e.target.dataset.index);
+        queueManager.remove(index);
+    }
+});
+
+function showExtendedOptions(event, song) {
+    event.preventDefault();
+    const contextMenu = document.createElement('div');
+    contextMenu.className = 'context-menu';
+    contextMenu.innerHTML = `
+        <ul>
+            <li data-action="play">Play Now</li>
+            <li data-action="queue">Add to Queue</li>
+            <li data-action="next">Play Next</li>
+            <li data-action="favorite">${song.favorite ? 'Remove from Favorites' : 'Add to Favorites'}</li>
+        </ul>
+    `;
+    
+    contextMenu.addEventListener('click', (e) => {
+        const action = e.target.dataset.action;
+        switch(action) {
+            case 'play':
+                playSong(song);
+                break;
+            case 'queue':
+                queueManager.add(song);
+                break;
+            case 'next':
+                queueManager.addNext(song);
+                break;
+            case 'favorite':
+                toggleFavorite(song);
+                break;
+        }
+        contextMenu.remove();
+    });
+}
+
+function playSong(song) {
+    if (!song) {
+        console.warn('No song provided to play');
+        return;
+    }
+
+    const songId = `${song.metadata.title}|||${song.metadata.artist}|||${song.metadata.album}`;
+    
+    if (songId !== currentlyPlayingSongId) {
+        currentlyPlayingSongId = songId;
+        
+        // Update display elements
+        elements.currentSongTitle.textContent = song.metadata.title;
+        elements.artistName.textContent = song.metadata.artist;
+        elements.albumName.textContent = song.metadata.album;
+        elements.coverArt.src = song.metadata.coverUrl || 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+
+        // Handle adaptive theme if active
+        if (document.documentElement.getAttribute('data-theme') === 'adaptive' && song.metadata.coverUrl) {
+            const img = new Image();
+            img.crossOrigin = "Anonymous";
+            img.onerror = () => {
+                updateAdaptiveTheme({
+                    primary: [30, 30, 30],
+                    secondary: [45, 45, 45],
+                    darkest: [20, 20, 20],
+                    lightest: [255, 255, 255],
+                    mostColorful: [100, 100, 100]
+                });
+            };
+            img.onload = async () => {
+                const colors = await getImageColors(img);
+                updateAdaptiveTheme(colors);
+            };
+            img.src = song.metadata.coverUrl;
+        }
+
+        // Update media session metadata
+        if ('mediaSession' in navigator) {
+            navigator.mediaSession.metadata = new MediaMetadata({
+                title: song.metadata.title,
+                artist: song.metadata.artist,
+                album: song.metadata.album,
+                artwork: song.metadata.coverUrl ? [
+                    { src: song.metadata.coverUrl, sizes: '512x512', type: 'image/jpeg' }
+                ] : []
+            });
+
+            // Set up media session handlers
+            navigator.mediaSession.setActionHandler('play', () => playAudio());
+            navigator.mediaSession.setActionHandler('pause', () => pauseAudio());
+            navigator.mediaSession.setActionHandler('previoustrack', () => elements.prevBtn.click());
+            navigator.mediaSession.setActionHandler('nexttrack', () => elements.nextBtn.click());
+        }
+
+        // Set up audio source
+        const url = URL.createObjectURL(song.file);
+        elements.audioPlayer.src = url;
+        
+        // Initialize audio context and analyzers if needed
+        if (!audioContext) {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            analyser = audioContext.createAnalyser();
+            analyser.fftSize = 256;
+            const source = audioContext.createMediaElementSource(elements.audioPlayer);
+            source.connect(analyser);
+            analyser.connect(audioContext.destination);
+            dataArray = new Uint8Array(analyser.frequencyBinCount);
+        }
+
+        // Start visualization if adaptive theme is active
+        if (document.documentElement.getAttribute('data-theme') === 'adaptive') {
+            startVisualization();
+        }
+
+        // Add to history
+        queueManager.addToHistory(song);
+        
+        // Update display
+        highlightCurrentSong();
+        updateSongTitleScroll();
+
+        // Clean up object URL after loading
+        elements.audioPlayer.oncanplay = () => {
+            URL.revokeObjectURL(url);
+        };
+    }
+
+    // Start playback
+    if (elements.autoplayToggle.checked || isPlaying) {
+        elements.audioPlayer.play()
+            .then(() => {
+                isPlaying = true;
+                elements.playBtn.innerHTML = '<span class="material-symbols-rounded">pause</span>';
+            })
+            .catch(error => {
+                console.error('Playback failed:', error);
+                isPlaying = false;
+                elements.playBtn.innerHTML = '<span class="material-symbols-rounded">play_arrow</span>';
+            });
+    }
+}
