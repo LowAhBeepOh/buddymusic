@@ -10,6 +10,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+    <link href="https://fonts.cdnfonts.com/css/opendyslexic" rel="stylesheet">
 </head>
 <body>
     <div class="container">
@@ -37,7 +38,7 @@
                     </select>
                 </div>
                 <div class="search-box">
-                    <input type="text" id="search-input" placeholder="Search by title, artist, album, decade (e.g., 80's) or type 'fav'">
+                    <input type="text" id="search-input" placeholder="Search by title, artist, album, year, decade, etc">
                 </div>
             </div>
 
@@ -55,8 +56,10 @@
         
         <div class="player-section">
             <div class="now-playing">
-                <div class="album-art">
-                    <img id="cover-art" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=" alt="Album art">
+                <div class="album-art-wrapper">
+                    <div class="album-art">
+                        <img id="cover-art" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=" alt="Album art">
+                    </div>
                 </div>
                 <div class="song-metadata">
                     <h3 id="current-song">No song selected</h3>
@@ -82,7 +85,6 @@
         </div>
     </div>
 
-    <!-- Add Settings Panel -->
     <div class="settings-panel" id="settings-panel">
         <div class="settings-header">
             <h3>Settings</h3>
@@ -98,12 +100,19 @@
                     <label for="settings-theme-select">Theme</label>
                     <select id="settings-theme-select">
                         <option value="adaptive">Adaptive (Beta)</option>
-                        <option value="fluid">Fluid</option>
                         <option value="dark">Dark</option>
                         <option value="spotify">Spotify</option>
                         <option value="purple">Purple Night</option>
                         <option value="ocean">Ocean Blue</option>
+                        <option value="fluid">Fluid</option>
                         <option value="sunset">Sunset</option>
+                    </select>
+                </div>
+                <div class="setting-item">
+                    <label for="font-family">Font</label>
+                    <select id="font-family">
+                        <option value="inter">Inter</option>
+                        <option value="opendyslexic">OpenDyslexic</option>
                     </select>
                 </div>
                 <div class="setting-item">
@@ -139,17 +148,44 @@
                     <input type="checkbox" id="autoplay">
                 </div>
             </section>
+
+            <section class="settings-section">
+                <h4>Storage</h4>
+                <div class="setting-item">
+                    <label for="auto-save">Automatic Local Saving</label>
+                    <select id="auto-save">
+                        <option value="all">All</option>
+                        <option value="favorites" selected>Only Favorites</option>
+                        <option value="none">None</option>
+                    </select>
+                </div>
+                <div class="setting-item database-control">
+                    <label>Delete Stored Songs</label>
+                    <button id="clear-database" class="clear-database-btn">Proceed</button>
+                </div>
+                <div class="setting-item database-control">
+                    <label>Delete Everything</label>
+                    <button id="clear-everything" class="clear-database-btn danger">Proceed</button>
+                </div>
+            </section>
         </div>
     </div>
 
     <audio id="audio-player"></audio>
     <script>
-        // Verify jsmediatags loaded
         window.addEventListener('load', () => {
             if (typeof jsmediatags === 'undefined') {
                 console.error('Failed to load jsmediatags library!');
             } else {
                 console.log('jsmediatags library loaded successfully');
+            }
+        });
+
+        document.addEventListener('contextmenu', (event) => {
+            const songElement = event.target.closest('.playlist-item');
+            if (songElement) {
+                const songIndex = Array.from(songElement.parentElement.children).indexOf(songElement);
+                showExtendedOptions(event, songs[songIndex]);
             }
         });
     </script>
