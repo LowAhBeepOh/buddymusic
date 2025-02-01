@@ -1,8 +1,7 @@
-/* Theme definitions */
 :root[data-theme="fluid"] {
     --bg-primary: linear-gradient(135deg, #1a1f35 0%, #212b46 100%);
-    --bg-secondary: linear-gradient(135deg, #2a3b5c 0%, #3a4b7c 100%); /* More saturated */
-    --bg-tertiary: linear-gradient(135deg, #3b4c6d 0%, #4b5d8d 100%); /* More saturated */
+    --bg-secondary: linear-gradient(135deg, #2a3b5c 0%, #3a4b7c 100%);
+    --bg-tertiary: linear-gradient(135deg, #3b4c6d 0%, #4b5d8d 100%);
     --text-primary: #ffffff;
     --text-secondary: #a0a8c9;
     --accent-color: #64ffda;
@@ -60,18 +59,17 @@
     --hover-color: #583333;
 }
 
-/* Adaptive theme with transitions */
 :root[data-theme="adaptive"] {
-    --bg-primary: var(--adaptive-primary, #1f1f2f);  /* Slightly lighter base */
-    --bg-secondary: var(--adaptive-secondary, #2a2a3a);  /* Slightly lighter secondary */
-    --bg-tertiary: var(--adaptive-tertiary, #35354a);  /* Slightly lighter tertiary */
+    --bg-primary: var(--adaptive-primary, #1f1f2f);
+    --bg-secondary: var(--adaptive-secondary, #2a2a3a);
+    --bg-tertiary: var(--adaptive-tertiary, #35354a);
     --text-primary: var(--adaptive-text-primary, #ffffff);
-    --text-secondary: var(--adaptive-text-secondary, rgba(255, 255, 255, 0.85));  /* Increased opacity */
+    --text-secondary: var(--adaptive-text-secondary, rgba(255, 255, 255, 0.85));
     --accent-color: var(--adaptive-accent, #ffffff);
-    --hover-color: var(--adaptive-hover, rgba(255, 255, 255, 0.12));  /* Slightly stronger hover */
-    --scrollbar-bg: rgba(255, 255, 255, 0.1); /* More transparent */
-    --scrollbar-thumb: rgba(255, 255, 255, 0.3); /* More transparent */
-    --scrollbar-thumb-hover: rgba(255, 255, 255, 0.5); /* More transparent */
+    --hover-color: var(--adaptive-hover, rgba(255, 255, 255, 0.12));
+    --scrollbar-bg: rgba(255, 255, 255, 0.1);
+    --scrollbar-thumb: rgba(255, 255, 255, 0.3);
+    --scrollbar-thumb-hover: rgba(255, 255, 255, 0.5);
     transition: 
         --bg-primary 0.6s cubic-bezier(0.4, 0, 0.2, 1),
         --bg-secondary 0.6s cubic-bezier(0.4, 0, 0.2, 1),
@@ -85,12 +83,11 @@
         border-color 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Base overlay colors */
 :root {
     --overlay-light: rgba(0, 0, 0, 0.1);
     --overlay-medium: rgba(0, 0, 0, 0.2);
     --overlay-strong: rgba(0, 0, 0, 0.3);
-    --text-tint: #ffffff; /* Default tint color */
+    --text-tint: #ffffff;
     --font-family: 'Inter Tight', sans-serif;
 }
 
@@ -121,7 +118,7 @@ body {
 }
 
 .sidebar {
-    width: 400px; /* Increased from 300px */
+    width: 400px;
     background: linear-gradient(180deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
     padding: 20px;
     border-right: 1px solid var(--bg-tertiary);
@@ -144,7 +141,6 @@ body {
     padding-right: 10px;
 }
 
-/* Webkit scrollbar compatibility */
 .playlist::-webkit-scrollbar {
     width: 8px;
 }
@@ -164,19 +160,18 @@ body {
     background: var(--accent-color);
 }
 
-/* Add adaptive theme specific scrollbar styling */
 [data-theme="adaptive"] .playlist::-webkit-scrollbar {
-    width: 6px; /* Thinner */
+    width: 6px;
 }
 
 [data-theme="adaptive"] .playlist::-webkit-scrollbar-track {
     background: var(--scrollbar-bg);
-    border-radius: 6px; /* More rounded */
+    border-radius: 6px;
 }
 
 [data-theme="adaptive"] .playlist::-webkit-scrollbar-thumb {
     background: var(--scrollbar-thumb);
-    border-radius: 6px; /* More rounded */
+    border-radius: 6px;
     transition: background 0.2s;
 }
 
@@ -184,13 +179,11 @@ body {
     background: var(--scrollbar-thumb-hover);
 }
 
-/* Firefox scrollbar compatibility */
 .playlist {
     scrollbar-width: thin;
     scrollbar-color: var(--bg-tertiary) var(--bg-secondary);
 }
 
-/* Add adaptive theme specific scrollbar styling for Firefox */
 [data-theme="adaptive"] .playlist {
     scrollbar-width: thin;
     scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-bg);
@@ -199,7 +192,7 @@ body {
 .playlist-item {
     display: flex;
     align-items: center;
-    padding: 8px 35px 8px 12px; /* Increased right padding to accommodate favorite button */
+    padding: 8px 35px 8px 12px;
     cursor: pointer;
     border-radius: 5px;
     margin-bottom: 2px;
@@ -292,7 +285,6 @@ body {
     flex-grow: 1;
 }
 
-/* Hover scrubbing in progress bar */
 #progress-bar:hover {
     cursor: pointer;
 }
@@ -330,7 +322,7 @@ input[type="range"] {
     border-radius: 5px;
     height: 6px;
     cursor: pointer;
-    transition: background 0.3s cubic-bezier(0.4, 0, 0.2, 1); /* Smoother transition */
+    transition: background 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     background: linear-gradient(90deg, 
         var(--accent-color) 0%, 
         var(--accent-color) var(--range-progress, 0%), 
@@ -347,7 +339,7 @@ input[type="range"]::-webkit-slider-thumb {
     background: var(--accent-color);
     cursor: pointer;
     border: none;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); /* Smoother transition */
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     transform-origin: center;
     transition: transform 0.2s ease;
 }
@@ -363,7 +355,7 @@ input[type="range"]::-moz-range-thumb {
     background: var(--accent-color);
     cursor: pointer;
     border: none;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); /* Smoother transition */
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 input[type="range"]:focus {
@@ -425,7 +417,7 @@ select:focus {
 }
 
 .icon-btn.add-icon .material-symbols-rounded {
-    font-size: 32px; /* Slightly bigger for the Add icon */
+    font-size: 32px;
 }
 
 .volume-icon {
@@ -435,8 +427,8 @@ select:focus {
 
 .album-art-wrapper {
     position: relative;
-    width: 250px;  /* Increased from 200px */
-    height: 250px;  /* Increased from 200px */
+    width: 250px;
+    height: 250px;
     margin: 0 auto 20px;
     border-radius: 10px;
     transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
@@ -446,70 +438,68 @@ select:focus {
 .album-art-wrapper::before {
     content: '';
     position: absolute;
-    top: -50px;    /* Increased from -20px */
-    left: -50px;   /* Increased from -20px */
-    right: -50px;  /* Increased from -20px */
-    bottom: -50px; /* Increased from -20px */
+    top: -50px;
+    left: -50px;
+    right: -50px;
+    bottom: -50px;
     background: var(--album-glow, rgba(255, 255, 255, 0.1));
-    filter: blur(35px);  /* Increased from 25px */
+    filter: blur(35px);
     border-radius: 50%;
     z-index: -1;
-    opacity: 0.8;   /* Increased from 0.7 */
+    opacity: 0.8;
     transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-    transform: scale(1.2); /* Added to make blob bigger */
+    transform: scale(1.2);
 }
 
 .album-art {
     position: relative;
     width: 100%;
     height: 100%;
-    border-radius: 12px; /* Slightly increased from 10px */
+    border-radius: 12px;
     overflow: hidden;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3); /* Enhanced shadow */
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
     transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
     z-index: 1;
 }
 
-/* Update maximized state */
 .album-art-wrapper.maximized {
-    width: 90%;    /* Increased from 80% */
+    width: 90%;
     height: auto;
-    max-width: 500px;  /* Increased from 400px */
-    max-height: 500px; /* Increased from 400px */
-    margin-bottom: 40px; /* Add more space below */
+    max-width: 500px;
+    max-height: 500px;
+    margin-bottom: 40px;
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
 }
 
 .album-art-wrapper.maximized::before {
-    filter: blur(25px); /* Reduced blur in maximized state */
-    opacity: 0.6; /* Reduced opacity */
-    transform: scale(1.1) translateY(40px); /* Moved down and slightly smaller scale */
+    filter: blur(25px);
+    opacity: 0.6;
+    transform: scale(1.1) translateY(40px);
 }
 
 .album-art-wrapper.maximized .album-art {
-    transform: scale(1.02); /* Slight scale up for emphasis */
-    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.4); /* Enhanced shadow */
+    transform: scale(1.02);
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.4);
 }
 
 .album-art img {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    display: block; /* Added to remove bottom gap */
+    display: block;
 }
 
-/* Update maximized state */
 .album-art-wrapper.maximized {
-    width: 90%;    /* Increased from 80% */
+    width: 90%;
     height: auto;
-    max-width: 500px;  /* Increased from 400px */
-    max-height: 500px; /* Increased from 400px */
+    max-width: 500px;
+    max-height: 500px;
 }
 
 .album-art-wrapper.maximized::before {
-    filter: blur(50px); /* Increased blur in maximized state */
-    opacity: 0.9;      /* Increased opacity in maximized state */
-    transform: scale(1.4); /* Bigger blob in maximized state */
+    filter: blur(50px);
+    opacity: 0.9;
+    transform: scale(1.4);
 }
 
 .song-metadata {
@@ -524,7 +514,6 @@ select:focus {
     color: var(--text-tint);
 }
 
-/* Scroll song title if too long */
 .song-metadata h3 {
     overflow: hidden;
     white-space: nowrap;
@@ -571,8 +560,8 @@ select:focus {
 
 .playlist-actions {
     display: flex;
-    flex-wrap: wrap; /* Allow buttons to wrap on narrow screens */
-    gap: 8px; /* Adjusted gap */
+    flex-wrap: wrap;
+    gap: 8px;
     margin-bottom: 10px;
 }
 
@@ -587,8 +576,8 @@ select:focus {
     text-align: center;
     display: inline-block;
     width: auto;
-    flex: 1; /* Make buttons fill available space */
-    min-width: fit-content; /* Ensure text fits */
+    flex: 1;
+    min-width: fit-content;
 }
 
 .secondary-btn:hover {
@@ -600,13 +589,13 @@ select:focus {
     padding: 8px;
     margin: 5px 0;
     background-color: var(--overlay-strong);
-    color: var(--text-primary);  /* Changed from default black to theme text color */
+    color: var(--text-primary);
     border: 1px solid var(--bg-tertiary);
     border-radius: 4px;
 }
 
 .search-box input::placeholder {
-    color: var(--text-secondary);  /* Added to style the placeholder text */
+    color: var(--text-secondary);
     opacity: 0.7;
 }
 
@@ -659,8 +648,8 @@ select:focus {
     cursor: pointer;
     padding: 8px;
     border-radius: 50%;
-    width: 40px; /* Ensure square dimensions */
-    height: 40px; /* Ensure square dimensions */
+    width: 40px;
+    height: 40px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -676,8 +665,8 @@ select:focus {
     right: -400px;
     width: 400px;
     height: 100vh;
-    background-color: var(--bg-primary);  /* Changed from secondary to primary */
-    box-shadow: -2px 0 10px rgba(0, 0, 0, 0.5);  /* Enhanced shadow */
+    background-color: var(--bg-primary);
+    box-shadow: -2px 0 10px rgba(0, 0, 0, 0.5);
     transition: right 0.3s ease;
     z-index: 1000;
     backdrop-filter: blur(15px);
@@ -694,7 +683,7 @@ select:focus {
     justify-content: space-between;
     align-items: center;
     padding: 20px;
-    background-color: var(--bg-secondary);  /* Added solid background */
+    background-color: var(--bg-secondary);
     border-bottom: 1px solid var(--bg-tertiary);
 }
 
@@ -719,7 +708,7 @@ select:focus {
     align-items: center;
     margin-bottom: 15px;
     padding: 10px;
-    background-color: var(--bg-secondary);  /* Changed from overlay to solid */
+    background-color: var(--bg-secondary);
     border-radius: 5px;
     transition: all 0.2s ease;
     border: 1px solid transparent;
@@ -750,7 +739,6 @@ select:focus {
     accent-color: var(--accent-color);
 }
 
-/* Add these styles for the clear database button */
 .setting-item .clear-database-btn {
     background-color: #ff4444;
     color: white;
@@ -766,7 +754,6 @@ select:focus {
     background-color: #ff1111;
 }
 
-/* Add styling for the new danger button */
 .setting-item .clear-database-btn.danger {
     background-color: #dc3545;
 }
@@ -775,39 +762,27 @@ select:focus {
     background-color: #bd2130;
 }
 
-/* Make sure the settings item for the database is properly spaced */
 .setting-item.database-control {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 15px;
-    padding: 15px;  /* Increased padding */
+    padding: 15px;
 }
 
-/* Accessibility: Reduced motion */
 [data-reduce-animations="true"] * {
     transition: none !important;
     animation: none !important;
 }
 
-/* Accessibility: High contrast */
 [data-high-contrast="true"] {
     --text-secondary: #ffffff;
     --hover-color: #000000;
 }
 
-/* Font size variations */
-[data-font-size="small"] {
-    font-size: 14px;
-}
-
-[data-font-size="medium"] {
-    font-size: 16px;
-}
-
-[data-font-size="large"] {
-    font-size: 18px;
-}
+[data-font-size="small"] { font-size: 14px; }
+[data-font-size="medium"] { font-size: 16px; }
+[data-font-size="large"] { font-size: 18px; }
 
 [data-theme="fluid"] .sidebar {
     background: linear-gradient(180deg, 
@@ -931,7 +906,6 @@ select:focus {
     border: none;
 }
 
-/* Special handling for adaptive theme */
 [data-theme="adaptive"] .sidebar,
 [data-theme="adaptive"] .player-section {
     transition: 
@@ -939,7 +913,6 @@ select:focus {
         background-color 0.5s ease-in-out;
 }
 
-/* Add smooth transitions for adaptive theme */
 [data-theme="adaptive"] * {
     transition: 
         background 0.5s ease-in-out,
@@ -957,13 +930,12 @@ select:focus {
 
 [data-theme="adaptive"] .tab-btn.active {
     background-color: var(--accent-color);
-    color: rgba(0, 0, 0, 0.9); /* Dark text for better contrast */
-    font-weight: 700; /* Make text slightly bolder for better readability */
+    color: rgba(0, 0, 0, 0.9);
+    font-weight: 700;
     animation: weightPulse 0.6s cubic-bezier(0.4, 0, 0.2, 1);
     font-variation-settings: 'wght' 600;
 }
 
-/* Add to the existing adaptive theme transitions */
 [data-theme="adaptive"] {
     transition: 
         --bg-primary 0.5s cubic-bezier(0.4, 0, 0.2, 1),
@@ -1049,14 +1021,14 @@ select:focus {
     color: var(--text-primary);
     border: none;
     cursor: pointer;
-    display: none;  /* Hidden by default */
+    display: none;
     align-items: center;
     justify-content: center;
     gap: 8px;
     transition: background-color 0.2s ease;
     z-index: 2;
     box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
-    border-radius: 12px; /* Changed from default to a fixed pixel value */
+    border-radius: 12px;
 }
 
 .add-all-to-queue:hover {
@@ -1087,11 +1059,11 @@ select:focus {
 
 .context-menu {
     position: fixed;
-    background-color: var(--bg-primary);  /* Changed from bg-secondary to bg-primary */
+    background-color: var(--bg-primary);
     border: 1px solid var(--bg-tertiary);
-    border-radius: 8px;  /* Increased border radius */
+    border-radius: 8px;
     padding: 4px 0;
-    min-width: 180px;  /* Increased min-width */
+    min-width: 180px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
     z-index: 1000;
     backdrop-filter: blur(10px);
@@ -1106,22 +1078,22 @@ select:focus {
 }
 
 .context-menu li {
-    padding: 10px 16px;  /* Increased padding */
+    padding: 10px 16px;
     cursor: pointer;
     color: var(--text-primary);
     display: flex;
     align-items: center;
-    gap: 12px;  /* Increased gap */
-    transition: background-color 0.2s;  /* Added transition */
+    gap: 12px;
+    transition: background-color 0.2s;
 }
 
 .context-menu li:hover:not(.disabled) {
-    background-color: var(--bg-secondary);  /* Changed from hover-color */
+    background-color: var(--bg-secondary);
 }
 
 .context-menu li .material-symbols-rounded {
     font-size: 20px;
-    color: var(--text-secondary);  /* Added secondary color for icons */
+    color: var(--text-secondary);
 }
 
 .context-menu li.disabled {

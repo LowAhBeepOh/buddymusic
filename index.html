@@ -173,7 +173,6 @@
 
     <audio id="audio-player"></audio>
     <script>
-        // Verify jsmediatags loaded
         window.addEventListener('load', () => {
             if (typeof jsmediatags === 'undefined') {
                 console.error('Failed to load jsmediatags library!');
@@ -182,7 +181,6 @@
             }
         });
 
-        // Add contextmenu event listener for right-clicking songs
         document.addEventListener('contextmenu', (event) => {
             const songElement = event.target.closest('.playlist-item');
             if (songElement) {
