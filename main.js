@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     const elements = {
         audioPlayer: document.getElementById('audio-player'),
         fileInput: document.getElementById('file-input'),
@@ -26,11 +26,15 @@ document.addEventListener('DOMContentLoaded', () => {
         settingsPanel: document.getElementById('settings-panel'),
         closeSettingsBtn: document.getElementById('close-settings-btn'),
         fontSizeSelect: document.getElementById('font-size'),
+        fontFamilySelect: document.getElementById('font-family'),
         highContrastToggle: document.getElementById('high-contrast'),
         reduceAnimationsToggle: document.getElementById('reduce-animations'),
         defaultVolumeSlider: document.getElementById('default-volume'),
         autoplayToggle: document.getElementById('autoplay'),
-        folderInput: document.getElementById('folder-input')
+        folderInput: document.getElementById('folder-input'),
+        clearDatabaseBtn: document.getElementById('clear-database'),
+        clearEverythingBtn: document.getElementById('clear-everything'),
+        autoSaveSelect: document.getElementById('auto-save') // Add auto-save select to elements
     };
 
     let audioContext;
@@ -176,6 +180,9 @@ document.addEventListener('DOMContentLoaded', () => {
         primary = adjustColorBrightnessToPercentage(primary, 0.35);
         secondary = adjustColorBrightnessToPercentage(secondary, 0.35);
         
+        // Calculate a lighter version of the most prominent color for the glow
+        const glowColor = calculateGlowColor(mostColorful);
+        
         const darkestBrightness = (darkest[0] * 299 + darkest[1] * 587 + darkest[2] * 114) / 1000;
         if (darkestBrightness > 128) {
             darkest = primary.map(c => Math.max(20, Math.round(c * 0.3)));
@@ -201,7 +208,8 @@ document.addEventListener('DOMContentLoaded', () => {
             '--text-secondary': toRGBA(adjustedSecondaryText, 0.8),
             '--accent-color': toHex(lightest),
             '--hover-color': toRGBA(secondary, 0.4),
-            '--text-tint': toHex(textTint)
+            '--text-tint': toHex(textTint),
+            '--album-glow': toRGBA(glowColor, 0.5)
         };
 
         requestAnimationFrame(() => {
@@ -209,6 +217,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 root.style.setProperty(property, value);
             });
         });
+    }
+
+    function calculateGlowColor(baseColor) {
+        // Make the color lighter while preserving its hue
+        const lightenAmount = 1.5; // Adjust this value to control how light the glow is
+        return baseColor.map(c => Math.min(255, Math.round(c * lightenAmount)));
     }
 
     function adjustColorBrightnessToPercentage(color, percentage) {
@@ -228,7 +242,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentSongIndex = 0;
     let isPlaying = false;
     let isShuffled = false;
-    let loopState = 'none';
+    let loopState = 'all';
     let queue = [];
     let recentlyPlayed = [];
     let currentPlaylist = 'main';
@@ -239,17 +253,264 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('buddy-music-favorites', JSON.stringify([...favorites]));
     }
 
-    function toggleFavorite(event, songMetadata) {
+    class FavoritesDB {
+        constructor() {
+            this.dbName = 'BuddyMusicDB';
+            this.dbVersion = 1;
+            this.storeName = 'favorites';
+            this.init();
+        }
+
+        async init() {
+            try {
+                this.db = await new Promise((resolve, reject) => {
+                    const request = indexedDB.open(this.dbName, this.dbVersion);
+                    
+                    request.onerror = () => reject(request.error);
+                    request.onsuccess = () => resolve(request.result);
+                    
+                    request.onupgradeneeded = (event) => {
+                        const db = event.target.result;
+                        if (!db.objectStoreNames.contains(this.storeName)) {
+                            db.createObjectStore(this.storeName, { keyPath: 'id' });
+                        }
+                    };
+                });
+            } catch (error) {
+                console.error('Failed to initialize IndexedDB:', error);
+            }
+        }
+
+        async saveSong(song) {
+            try {
+                await this.init();
+                const songData = {
+                    id: `${song.metadata.title}|||${song.metadata.artist}`,
+                    metadata: song.metadata,
+                    file: await this.fileToArrayBuffer(song.file)
+                };
+                
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction([this.storeName], 'readwrite');
+                    const store = transaction.objectStore(this.storeName);
+                    const request = store.put(songData);
+                    
+                    request.onsuccess = () => resolve();
+                    request.onerror = () => reject(request.error);
+                });
+            } catch (error) {
+                console.error('Failed to save song:', error);
+            }
+        }
+
+        async deleteSong(songId) {
+            try {
+                await this.init();
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction([this.storeName], 'readwrite');
+                    const store = transaction.objectStore(this.storeName);
+                    const request = store.delete(songId);
+                    
+                    request.onsuccess = () => resolve();
+                    request.onerror = () => reject(request.error);
+                });
+            } catch (error) {
+                console.error('Failed to delete song:', error);
+            }
+        }
+
+        async getAllSongs() {
+            try {
+                await this.init();
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction([this.storeName], 'readonly');
+                    const store = transaction.objectStore(this.storeName);
+                    const request = store.getAll();
+                    
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = () => reject(request.error);
+                });
+            } catch (error) {
+                console.error('Failed to get songs:', error);
+                return [];
+            }
+        }
+
+        async fileToArrayBuffer(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = () => reject(reader.error);
+                reader.readAsArrayBuffer(file);
+            });
+        }
+
+        async clearDatabase() {
+            try {
+                await this.init();
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction([this.storeName], 'readwrite');
+                    const store = transaction.objectStore(this.storeName);
+                    const request = store.clear();
+                    
+                    transaction.oncomplete = () => {
+                        console.log('Favorites database cleared successfully');
+                        resolve();
+                    };
+                    transaction.onerror = () => reject(transaction.error);
+                });
+            } catch (error) {
+                console.error('Failed to clear favorites database:', error);
+                throw error;
+            }
+        }
+    }
+
+    class SongsDB {
+        constructor() {
+            this.dbName = 'BuddyMusicSongsDB';
+            this.dbVersion = 1;
+            this.storeName = 'songs';
+            this.init();
+        }
+
+        async init() {
+            try {
+                this.db = await new Promise((resolve, reject) => {
+                    const request = indexedDB.open(this.dbName, this.dbVersion);
+                    
+                    request.onerror = () => reject(request.error);
+                    request.onsuccess = () => resolve(request.result);
+                    
+                    request.onupgradeneeded = (event) => {
+                        const db = event.target.result;
+                        if (!db.objectStoreNames.contains(this.storeName)) {
+                            db.createObjectStore(this.storeName, { keyPath: 'id' });
+                        }
+                    };
+                });
+            } catch (error) {
+                console.error('Failed to initialize SongsDB:', error);
+            }
+        }
+
+        async saveSong(song) {
+            try {
+                await this.init();
+                const songData = {
+                    id: `${song.metadata.title}|||${song.metadata.artist}`,
+                    metadata: song.metadata,
+                    file: await this.fileToArrayBuffer(song.file)
+                };
+                
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction([this.storeName], 'readwrite');
+                    const store = transaction.objectStore(this.storeName);
+                    const request = store.put(songData);
+                    
+                    request.onsuccess = () => resolve();
+                    request.onerror = () => reject(request.error);
+                });
+            } catch (error) {
+                console.error('Failed to save song:', error);
+            }
+        }
+
+        async getAllSongs() {
+            try {
+                await this.init();
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction([this.storeName], 'readonly');
+                    const store = transaction.objectStore(this.storeName);
+                    const request = store.getAll();
+                    
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = () => reject(request.error);
+                });
+            } catch (error) {
+                console.error('Failed to get songs:', error);
+                return [];
+            }
+        }
+
+        async clearDatabase() {
+            try {
+                await this.init();
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction([this.storeName], 'readwrite');
+                    const store = transaction.objectStore(this.storeName);
+                    const request = store.clear();
+                    
+                    transaction.oncomplete = () => {
+                        console.log('Database cleared successfully');
+                        resolve();
+                    };
+                    transaction.onerror = () => reject(transaction.error);
+                });
+            } catch (error) {
+                console.error('Failed to clear database:', error);
+                throw error;
+            }
+        }
+
+        async fileToArrayBuffer(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = () => reject(reader.error);
+                reader.readAsArrayBuffer(file);
+            });
+        }
+
+        async deleteSong(songId) {
+            try {
+                await this.init();
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction([this.storeName], 'readwrite');
+                    const store = transaction.objectStore(this.storeName);
+                    const request = store.delete(songId);
+                    
+                    request.onsuccess = () => resolve();
+                    request.onerror = () => reject(request.error);
+                });
+            } catch (error) {
+                console.error('Failed to delete song:', error);
+                throw error;
+            }
+        }
+    }
+
+    // Initialize the database manager
+    const favoritesDB = new FavoritesDB();
+    const songsDB = new SongsDB();
+
+    async function toggleFavorite(event, songMetadata) {
         event.stopPropagation();
         const key = `${songMetadata.title}|||${songMetadata.artist}`;
         const btn = event.currentTarget;
+        const settings = getSettings();
         
         if (favorites.has(key)) {
             favorites.delete(key);
             btn.classList.remove('active');
+            await favoritesDB.deleteSong(key);
+            if (settings.autoSave === 'favorites') {
+                await songsDB.deleteSong(key);
+            }
         } else {
             favorites.add(key);
             btn.classList.add('active');
+            // Find the song object from the songs array
+            const song = songs.find(s => 
+                s.metadata.title === songMetadata.title && 
+                s.metadata.artist === songMetadata.artist
+            );
+            if (song) {
+                await favoritesDB.saveSong(song);
+                if (settings.autoSave === 'favorites') {
+                    await songsDB.saveSong(song);
+                }
+            }
         }
         
         saveFavorites();
@@ -350,16 +611,38 @@ document.addEventListener('DOMContentLoaded', () => {
         return cleaned || null;
     }
 
+    // Add this helper function to get settings with defaults
+    function getSettings() {
+        return JSON.parse(localStorage.getItem('buddy-music-settings')) || {
+            fontSize: 'medium',
+            fontFamily: 'inter',
+            highContrast: false,
+            reduceAnimations: false,
+            defaultVolume: 100,
+            autoplay: false,
+            autoSave: 'favorites' // Default to 'favorites'
+        };
+    }
+
     async function updatePlaylist(files) {
         const startIndex = songs.length;
+        const settings = getSettings(); // Use the helper function
+        
         for (let i = 0; i < files.length; i++) {
             const file = files[i];
             const metadata = await getMetadata(file);
-            songs.push({ file, metadata });
+            const song = { file, metadata };
+            songs.push(song);
+            
+            // Handle automatic saving based on settings
+            if (settings.autoSave === 'all') {
+                await songsDB.saveSong(song);
+            } else if (settings.autoSave === 'favorites' && isFavorite(metadata)) {
+                await songsDB.saveSong(song);
+            }
         }
         
         visibleSongs = [...songs];
-        
         updatePlaylistView(visibleSongs);
     }
 
@@ -370,27 +653,134 @@ document.addEventListener('DOMContentLoaded', () => {
             <span class="song-title">${song.metadata.title}</span>
             <span class="song-separator"> - </span>
             <span class="song-artist">${song.metadata.artist}</span>
-            <button class="favorite-btn ${isFavorite(song.metadata) ? 'active' : ''}">
-                <span class="material-symbols-rounded">favorite</span>
-            </button>
         `;
         
         div.addEventListener('contextmenu', (e) => {
             e.preventDefault();
-            addToQueue(index);
-            const feedback = document.createElement('div');
-            feedback.className = 'queue-feedback';
-            feedback.textContent = 'Added to queue';
-            div.appendChild(feedback);
-            setTimeout(() => feedback.remove(), 1000);
+            showContextMenu(e, song, index);
         });
         
         div.addEventListener('click', () => clickHandler(index));
         
-        const favoriteBtn = div.querySelector('.favorite-btn');
-        favoriteBtn.addEventListener('click', (e) => toggleFavorite(e, song.metadata));
-        
         return div;
+    }
+
+    // Add this new function before showContextMenu
+    async function checkIfSongIsSaved(song) {
+        try {
+            const songId = `${song.metadata.title}|||${song.metadata.artist}`;
+            const allSongs = await songsDB.getAllSongs();
+            const isSaved = allSongs.some(s => s.id === songId);
+            return isSaved;
+        } catch (error) {
+            console.error('Error checking if song is saved:', error);
+            return false;
+        }
+    }
+
+    async function showContextMenu(event, song, index) {
+        event.preventDefault();
+        
+        // Remove any existing context menus
+        const existingMenu = document.querySelector('.context-menu');
+        if (existingMenu) existingMenu.remove();
+
+        // Check if song is already saved
+        const isSaved = await checkIfSongIsSaved(song);
+
+        const contextMenu = document.createElement('div');
+        contextMenu.className = 'context-menu';
+        contextMenu.innerHTML = `
+            <ul>
+                <li data-action="queue">
+                    <span class="material-symbols-rounded">queue_music</span>
+                    Add to Queue
+                </li>
+                <li data-action="favorite">
+                    <span class="material-symbols-rounded">favorite</span>
+                    ${isFavorite(song.metadata) ? 'Remove from Favorites' : 'Add to Favorites'}
+                </li>
+                <li data-action="save" ${isSaved ? 'class="disabled"' : ''}>
+                    <span class="material-symbols-rounded">save</span>
+                    ${isSaved ? 'Already Saved' : 'Save Locally'}
+                </li>
+                <li data-action="delete">
+                    <span class="material-symbols-rounded">delete</span>
+                    Delete
+                </li>
+            </ul>
+        `;
+
+        // Position the menu
+        contextMenu.style.top = `${event.pageY}px`;
+        contextMenu.style.left = `${event.pageX}px`;
+        document.body.appendChild(contextMenu);
+
+        // Handle menu item clicks
+        contextMenu.addEventListener('click', async (e) => {
+            const menuItem = e.target.closest('li');
+            if (!menuItem) return;
+            const action = menuItem.dataset.action;
+            
+            // Don't process disabled items
+            if (menuItem.classList.contains('disabled')) {
+                contextMenu.remove();
+                return;
+            }
+
+            switch(action) {
+                case 'queue':
+                    addToQueue(index);
+                    break;
+                case 'favorite':
+                    toggleFavorite(e, song.metadata);
+                    break;
+                case 'save':
+                    try {
+                        await songsDB.saveSong(song);
+                        menuItem.innerHTML = `
+                            <span class="material-symbols-rounded">check</span>
+                            Saved Successfully
+                        `;
+                        menuItem.classList.add('disabled');
+                        setTimeout(() => contextMenu.remove(), 1000);
+                    } catch (error) {
+                        console.error('Failed to save song:', error);
+                        menuItem.innerHTML = `
+                            <span class="material-symbols-rounded">error</span>
+                            Failed to Save
+                        `;
+                        setTimeout(() => contextMenu.remove(), 1000);
+                    }
+                    break;
+                case 'delete':
+                    if (confirm('Are you sure you want to delete this song?')) {
+                        const songId = `${song.metadata.title}|||${song.metadata.artist}`;
+                        await Promise.all([
+                            songsDB.deleteSong(songId),
+                            favoritesDB.deleteSong(songId)
+                        ]);
+                        favorites.delete(songId);
+                        const songIndex = songs.indexOf(song);
+                        if (songIndex > -1) {
+                            songs.splice(songIndex, 1);
+                            updatePlaylistView(songs);
+                        }
+                    }
+                    break;
+            }
+            
+            contextMenu.remove();
+        });
+
+        // Close menu when clicking outside
+        const closeMenu = (e) => {
+            if (!contextMenu.contains(e.target)) {
+                contextMenu.remove();
+                document.removeEventListener('click', closeMenu);
+            }
+        };
+        document.addEventListener('click', closeMenu);
     }
 
     function addToQueue(songIndex) {
@@ -821,7 +1211,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Click album art to maximize
     elements.coverArt.addEventListener('click', () => {
-        elements.coverArt.parentElement.classList.toggle('maximized');
+        elements.coverArt.closest('.album-art-wrapper').classList.toggle('maximized');
     });
 
     // Scroll song title if too long
@@ -972,11 +1362,40 @@ document.addEventListener('DOMContentLoaded', () => {
         filterPlaylist(e.target.value || '');
     });
 
+    function generateArtistAbbreviations(artistName) {
+        const words = artistName.toLowerCase().split(' ');
+        const abbreviations = new Set();
+        
+        // Standard abbreviation (first letters)
+        abbreviations.add(words.map(w => w[0]).join(''));
+        
+        // Number substitutions map
+        const numberWords = {
+            'to': '2',
+            'too': '2',
+            'two': '2',
+            'for': '4',
+            'four': '4',
+            'ate': '8',
+            'eight': '8'
+        };
+        
+        // Generate variations with number substitutions
+        const variations = words.map(word => numberWords[word] || word[0]);
+        abbreviations.add(variations.join(''));
+        
+        // Handle 'and' & '&' removal
+        const withoutAnd = words.filter(w => w !== 'and' && w !== '&');
+        abbreviations.add(withoutAnd.map(w => w[0]).join(''));
+        
+        return abbreviations;
+    }
+
     function filterPlaylist(searchTerm) {
         if (!searchTerm) {
             updatePlaylistView(songs);
             hideAddAllToQueue();
-            tempSearchResults = []; // Clear temp results when search is empty
+            tempSearchResults = [];
             return;
         }
 
@@ -1017,7 +1436,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     ${song.metadata.year}
                     ${song.metadata.genre}
                 `.toLowerCase();
-                return searchable.includes(searchLower);
+
+                // Generate abbreviations for the artist name
+                const artistAbbreviations = generateArtistAbbreviations(song.metadata.artist);
+
+                return searchable.includes(searchLower) || 
+                       [...artistAbbreviations].some(abbr => abbr === searchLower);
             });
         }
 
@@ -1189,27 +1613,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function initializeSettings() {
-        const settings = JSON.parse(localStorage.getItem('buddy-music-settings')) || {
-            fontSize: 'medium',
-            highContrast: false,
-            reduceAnimations: false,
-            defaultVolume: 100,
-            autoplay: false
-        };
-
+        const settings = getSettings();
         applySettings(settings);
 
         elements.fontSizeSelect.value = settings.fontSize;
+        elements.fontFamilySelect.value = settings.fontFamily;
         elements.highContrastToggle.checked = settings.highContrast;
         elements.reduceAnimationsToggle.checked = settings.reduceAnimations;
         elements.defaultVolumeSlider.value = settings.defaultVolume;
         elements.autoplayToggle.checked = settings.autoplay;
+        elements.autoSaveSelect.value = settings.autoSave;
     }
 
     function applySettings(settings) {
         document.documentElement.setAttribute('data-font-size', settings.fontSize);
+        document.documentElement.setAttribute('data-font', settings.fontFamily);
         document.documentElement.setAttribute('data-high-contrast', settings.highContrast);
-        document.documentElement.setAttribute('data-reduce-animations', settings.reduceAnimations);
         if (elements.audioPlayer) {
             elements.audioPlayer.volume = settings.defaultVolume / 100;
         }
@@ -1218,10 +1637,12 @@ document.addEventListener('DOMContentLoaded', () => {
     function saveSettings() {
         const settings = {
             fontSize: elements.fontSizeSelect.value,
+            fontFamily: elements.fontFamilySelect.value,
             highContrast: elements.highContrastToggle.checked,
             reduceAnimations: elements.reduceAnimationsToggle.checked,
             defaultVolume: elements.defaultVolumeSlider.value,
-            autoplay: elements.autoplayToggle.checked
+            autoplay: elements.autoplayToggle.checked,
+            autoSave: elements.autoSaveSelect.value
         };
         localStorage.setItem('buddy-music-settings', JSON.stringify(settings));
         applySettings(settings);
@@ -1237,10 +1658,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     [
         'fontSizeSelect',
+        'fontFamilySelect',
         'highContrastToggle',
         'reduceAnimationsToggle',
         'defaultVolumeSlider',
-        'autoplayToggle'
+        'autoplayToggle',
+        'autoSaveSelect' // Add auto-save select to settings change listeners
     ].forEach(settingId => {
         elements[settingId].addEventListener('change', saveSettings);
     });
@@ -1345,6 +1768,160 @@ document.addEventListener('DOMContentLoaded', () => {
                 break;
         }
     });
+
+    // Set initial loop button state
+    elements.audioPlayer.loop = false;
+    elements.loopBtn.innerHTML = '<span class="material-symbols-rounded">repeat</span>';
+    elements.loopBtn.style.color = '#1db954'; // Set initial color to active state
+
+    // Load favorites from IndexedDB
+    const savedSongs = await favoritesDB.getAllSongs();
+    savedSongs.forEach(songData => {
+        const key = songData.id;
+        favorites.add(key);
+        
+        // Convert ArrayBuffer back to File
+        const file = new File([songData.file], `${songData.metadata.title}.mp3`, {
+            type: 'audio/mpeg'
+        });
+        
+        // Add to songs array if not already present
+        const exists = songs.some(s => 
+            s.metadata.title === songData.metadata.title && 
+            s.metadata.artist === songData.metadata.artist
+        );
+        
+        if (!exists) {
+            songs.push({
+                file: file,
+                metadata: songData.metadata
+            });
+        }
+    });
+
+    // Update the playlist view with any restored songs
+    updatePlaylistView(songs);
+
+    // Load all songs from database
+    const savedSongsFromDB = await songsDB.getAllSongs();
+    savedSongsFromDB.forEach(songData => {
+        // Convert ArrayBuffer back to File
+        const file = new File([songData.file], `${songData.metadata.title}.mp3`, {
+            type: 'audio/mpeg'
+        });
+        
+        // Add to songs array if not already present
+        const exists = songs.some(s => 
+            s.metadata.title === songData.metadata.title && 
+            s.metadata.artist === songData.metadata.artist
+        );
+        
+        if (!exists) {
+            songs.push({
+                file: file,
+                metadata: songData.metadata
+            });
+        }
+    });
+
+    // Update the playlist view with restored songs
+    updatePlaylistView(songs);
+
+    elements.clearDatabaseBtn?.addEventListener('click', async () => {
+        if (confirm('Are you sure you want to clear the local database? This will remove all stored songs.')) {
+            try {
+                // Show loading state
+                const originalText = elements.clearDatabaseBtn.textContent;
+                elements.clearDatabaseBtn.textContent = 'Clearing...';
+                elements.clearDatabaseBtn.disabled = true;
+
+                // Clear both databases
+                await Promise.all([
+                    songsDB.clearDatabase(),
+                    favoritesDB.clearDatabase()
+                ]);
+
+                // Clear arrays and update UI
+                songs = [];
+                favorites = new Set();
+                visibleSongs = [];
+                queue = [];
+                recentlyPlayed = [];
+                
+                // Update all views
+                updatePlaylistView([]);
+                updateQueueView();
+                updateRecentlyPlayedView();
+
+                // Reset button state
+                elements.clearDatabaseBtn.textContent = originalText;
+                elements.clearDatabaseBtn.disabled = false;
+
+                alert('Database cleared successfully');
+            } catch (error) {
+                console.error('Failed to clear database:', error);
+                alert('Failed to clear database: ' + error.message);
+                
+                // Reset button state
+                elements.clearDatabaseBtn.textContent = originalText;
+                elements.clearDatabaseBtn.disabled = false;
+            }
+        }
+    });
+
+    async function clearEverything() {
+        if (confirm('Are you sure you want to delete ALL data? This includes songs, favorites, and all settings. This cannot be undone.')) {
+            try {
+                // Show loading state
+                const originalText = elements.clearEverythingBtn.textContent;
+                elements.clearEverythingBtn.textContent = 'Deleting...';
+                elements.clearEverythingBtn.disabled = true;
+
+                // Clear all databases
+                await Promise.all([
+                    songsDB.clearDatabase(),
+                    favoritesDB.clearDatabase()
+                ]);
+
+                // Clear localStorage
+                localStorage.clear();
+
+                // Clear memory
+                songs = [];
+                favorites = new Set();
+                visibleSongs = [];
+                queue = [];
+                recentlyPlayed = [];
+                
+                // Update all views
+                updatePlaylistView([]);
+                updateQueueView();
+                updateRecentlyPlayedView();
+
+                // Reset settings to defaults
+                initializeSettings();
+                initializeTheme();
+
+                // Reset button state
+                elements.clearEverythingBtn.textContent = originalText;
+                elements.clearEverythingBtn.disabled = false;
+
+                alert('All data has been deleted successfully');
+                
+                // Reload the page to ensure a clean state
+                window.location.reload();
+            } catch (error) {
+                console.error('Failed to clear all data:', error);
+                alert('Failed to clear all data: ' + error.message);
+                
+                // Reset button state
+                elements.clearEverythingBtn.textContent = originalText;
+                elements.clearEverythingBtn.disabled = false;
+            }
+        }
+    }
+
+    elements.clearEverythingBtn?.addEventListener('click', clearEverything);
 });
 
 class QueueManager {

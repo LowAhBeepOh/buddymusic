@@ -62,9 +62,9 @@
 
 /* Adaptive theme with transitions */
 :root[data-theme="adaptive"] {
-    --bg-primary: var(--adaptive-primary, #1a1a2a);  /* Darker with slight blue tint */
-    --bg-secondary: var(--adaptive-secondary, #252535);  /* Darker with slight blue tint */
-    --bg-tertiary: var(--adaptive-tertiary, #303045);  /* Darker with slight blue tint */
+    --bg-primary: var(--adaptive-primary, #1f1f2f);  /* Slightly lighter base */
+    --bg-secondary: var(--adaptive-secondary, #2a2a3a);  /* Slightly lighter secondary */
+    --bg-tertiary: var(--adaptive-tertiary, #35354a);  /* Slightly lighter tertiary */
     --text-primary: var(--adaptive-text-primary, #ffffff);
     --text-secondary: var(--adaptive-text-secondary, rgba(255, 255, 255, 0.85));  /* Increased opacity */
     --accent-color: var(--adaptive-accent, #ffffff);
@@ -73,16 +73,16 @@
     --scrollbar-thumb: rgba(255, 255, 255, 0.3); /* More transparent */
     --scrollbar-thumb-hover: rgba(255, 255, 255, 0.5); /* More transparent */
     transition: 
-        --bg-primary 0.3s ease,
-        --bg-secondary 0.3s ease,
-        --bg-tertiary 0.3s ease,
-        --text-primary 0.3s ease,
-        --text-secondary 0.3s ease,
-        --accent-color 0.3s ease,
-        --hover-color 0.3s ease,
-        background-color 0.5s ease-in-out,
-        color 0.5s ease-in-out,
-        border-color 0.5s ease-in-out;
+        --bg-primary 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+        --bg-secondary 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+        --bg-tertiary 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+        --text-primary 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+        --text-secondary 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+        --accent-color 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+        --hover-color 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+        background-color 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+        color 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+        border-color 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Base overlay colors */
@@ -91,13 +91,22 @@
     --overlay-medium: rgba(0, 0, 0, 0.2);
     --overlay-strong: rgba(0, 0, 0, 0.3);
     --text-tint: #ffffff; /* Default tint color */
+    --font-family: 'Inter Tight', sans-serif;
+}
+
+:root[data-font="opendyslexic"] {
+    --font-family: 'OpenDyslexic', sans-serif;
+}
+
+:root[data-font="inter"] {
+    --font-family: 'Inter Tight', sans-serif;
 }
 
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: 'Inter Tight', sans-serif;
+    font-family: var(--font-family);
 }
 
 body {
@@ -121,6 +130,9 @@ body {
     height: 100%;
     position: relative;
     z-index: 1;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
 }
 
 .playlist {
@@ -196,14 +208,26 @@ body {
     overflow: hidden;
     text-overflow: ellipsis;
     background-color: var(--overlay-light);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    border: 1px solid transparent;
 }
 
 .playlist-item:hover {
     background-color: var(--overlay-medium);
+    transform: translateX(4px);
+    border-color: var(--accent-color);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .playlist-item.active {
     background-color: var(--overlay-strong);
+    background: linear-gradient(90deg, 
+        var(--bg-tertiary) 0%, 
+        var(--hover-color) 100%
+    );
+    border-left: 3px solid var(--accent-color);
 }
 
 .playlist-item .song-title {
@@ -229,25 +253,7 @@ body {
 }
 
 .favorite-btn {
-    position: absolute;
-    right: 8px; /* Adjusted position */
-    background: none;
-    border: none;
-    color: var(--text-secondary);
-    cursor: pointer;
-    padding: 4px;
-    border-radius: 50%;
-    flex-shrink: 0;
-    opacity: 0;
-    transition: opacity 0.2s;
-}
-
-.favorite-btn:hover {
-    background-color: var(--hover-color);
-}
-
-.favorite-btn.active {
-    color: #ff4081;
+    display: none;
 }
 
 .playlist-item:hover .favorite-btn {
@@ -322,9 +328,15 @@ input[type="range"] {
     appearance: none;
     background: var(--overlay-medium);
     border-radius: 5px;
-    height: 5px;
+    height: 6px;
     cursor: pointer;
     transition: background 0.3s cubic-bezier(0.4, 0, 0.2, 1); /* Smoother transition */
+    background: linear-gradient(90deg, 
+        var(--accent-color) 0%, 
+        var(--accent-color) var(--range-progress, 0%), 
+        var(--bg-tertiary) var(--range-progress, 0%)
+    );
+    transition: all 0.2s ease;
 }
 
 input[type="range"]::-webkit-slider-thumb {
@@ -336,6 +348,12 @@ input[type="range"]::-webkit-slider-thumb {
     cursor: pointer;
     border: none;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); /* Smoother transition */
+    transform-origin: center;
+    transition: transform 0.2s ease;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
 }
 
 input[type="range"]::-moz-range-thumb {
@@ -415,29 +433,83 @@ select:focus {
     margin-left: 10px;
 }
 
-.album-art {
-    width: 200px;
-    height: 200px;
+.album-art-wrapper {
+    position: relative;
+    width: 250px;  /* Increased from 200px */
+    height: 250px;  /* Increased from 200px */
     margin: 0 auto 20px;
     border-radius: 10px;
-    overflow: hidden;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-    transition: width 0.3s ease, height 0.3s ease, transform 0.3s ease;
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
 }
 
-/* Maximize album art */
-.album-art.maximized {
-    width: 80%;
+.album-art-wrapper::before {
+    content: '';
+    position: absolute;
+    top: -50px;    /* Increased from -20px */
+    left: -50px;   /* Increased from -20px */
+    right: -50px;  /* Increased from -20px */
+    bottom: -50px; /* Increased from -20px */
+    background: var(--album-glow, rgba(255, 255, 255, 0.1));
+    filter: blur(35px);  /* Increased from 25px */
+    border-radius: 50%;
+    z-index: -1;
+    opacity: 0.8;   /* Increased from 0.7 */
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    transform: scale(1.2); /* Added to make blob bigger */
+}
+
+.album-art {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    border-radius: 12px; /* Slightly increased from 10px */
+    overflow: hidden;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3); /* Enhanced shadow */
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 1;
+}
+
+/* Update maximized state */
+.album-art-wrapper.maximized {
+    width: 90%;    /* Increased from 80% */
     height: auto;
-    max-width: 400px;
-    max-height: 400px;
-    transition: width 0.3s ease, height 0.3s ease, transform 0.3s ease;
+    max-width: 500px;  /* Increased from 400px */
+    max-height: 500px; /* Increased from 400px */
+    margin-bottom: 40px; /* Add more space below */
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+}
+
+.album-art-wrapper.maximized::before {
+    filter: blur(25px); /* Reduced blur in maximized state */
+    opacity: 0.6; /* Reduced opacity */
+    transform: scale(1.1) translateY(40px); /* Moved down and slightly smaller scale */
+}
+
+.album-art-wrapper.maximized .album-art {
+    transform: scale(1.02); /* Slight scale up for emphasis */
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.4); /* Enhanced shadow */
 }
 
 .album-art img {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    display: block; /* Added to remove bottom gap */
+}
+
+/* Update maximized state */
+.album-art-wrapper.maximized {
+    width: 90%;    /* Increased from 80% */
+    height: auto;
+    max-width: 500px;  /* Increased from 400px */
+    max-height: 500px; /* Increased from 400px */
+}
+
+.album-art-wrapper.maximized::before {
+    filter: blur(50px); /* Increased blur in maximized state */
+    opacity: 0.9;      /* Increased opacity in maximized state */
+    transform: scale(1.4); /* Bigger blob in maximized state */
 }
 
 .song-metadata {
@@ -552,11 +624,20 @@ select:focus {
     border: none;
     border-radius: 4px;
     cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid transparent;
+}
+
+.tab-btn:hover:not(.active) {
+    border-color: var(--accent-color);
+    transform: translateY(-2px);
 }
 
 .tab-btn.active {
     background-color: var(--accent-color);
     color: var(--text-primary);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .sidebar-header {
@@ -595,10 +676,13 @@ select:focus {
     right: -400px;
     width: 400px;
     height: 100vh;
-    background-color: var(--bg-secondary);
-    box-shadow: -2px 0 10px rgba(0, 0, 0, 0.3);
+    background-color: var(--bg-primary);  /* Changed from secondary to primary */
+    box-shadow: -2px 0 10px rgba(0, 0, 0, 0.5);  /* Enhanced shadow */
     transition: right 0.3s ease;
     z-index: 1000;
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    box-shadow: -5px 0 25px rgba(0, 0, 0, 0.3);
 }
 
 .settings-panel.active {
@@ -610,6 +694,7 @@ select:focus {
     justify-content: space-between;
     align-items: center;
     padding: 20px;
+    background-color: var(--bg-secondary);  /* Added solid background */
     border-bottom: 1px solid var(--bg-tertiary);
 }
 
@@ -634,8 +719,15 @@ select:focus {
     align-items: center;
     margin-bottom: 15px;
     padding: 10px;
-    background-color: var(--overlay-medium);
+    background-color: var(--bg-secondary);  /* Changed from overlay to solid */
     border-radius: 5px;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+}
+
+.setting-item:hover {
+    border-color: var(--accent-color);
+    transform: translateX(4px);
 }
 
 .setting-item label {
@@ -656,6 +748,40 @@ select:focus {
     width: 20px;
     height: 20px;
     accent-color: var(--accent-color);
+}
+
+/* Add these styles for the clear database button */
+.setting-item .clear-database-btn {
+    background-color: #ff4444;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-size: 0.9em;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.setting-item .clear-database-btn:hover {
+    background-color: #ff1111;
+}
+
+/* Add styling for the new danger button */
+.setting-item .clear-database-btn.danger {
+    background-color: #dc3545;
+}
+
+.setting-item .clear-database-btn.danger:hover {
+    background-color: #bd2130;
+}
+
+/* Make sure the settings item for the database is properly spaced */
+.setting-item.database-control {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding: 15px;  /* Increased padding */
 }
 
 /* Accessibility: Reduced motion */
@@ -728,15 +854,13 @@ select:focus {
 }
 
 [data-theme="fluid"] .settings-panel {
-    backdrop-filter: blur(10px);
+    backdrop-filter: none;
+    background-color: var(--bg-primary);
 }
 
-[data-theme="fluid"] .setting-item select {
-    background-color: var(--button-bg);
-}
-
-[data-theme="fluid"] .setting-item select:focus {
-    border-color: var(--accent-color);
+[data-theme="fluid"] .setting-item {
+    background-color: var(--bg-secondary);
+    backdrop-filter: none;
 }
 
 [data-theme="fluid"] .playlist-controls {
@@ -854,6 +978,12 @@ select:focus {
         border-color 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+[data-theme="adaptive"] .controls button {
+    transition: 
+        background-color 0.1s ease,
+        color 0.1s ease;
+}
+
 .queue-list {
     margin-top: 20px;
     overflow-y: auto;
@@ -957,12 +1087,16 @@ select:focus {
 
 .context-menu {
     position: fixed;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 8px 0;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    background-color: var(--bg-primary);  /* Changed from bg-secondary to bg-primary */
+    border: 1px solid var(--bg-tertiary);
+    border-radius: 8px;  /* Increased border radius */
+    padding: 4px 0;
+    min-width: 180px;  /* Increased min-width */
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
     z-index: 1000;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .context-menu ul {
@@ -972,10 +1106,26 @@ select:focus {
 }
 
 .context-menu li {
-    padding: 8px 16px;
+    padding: 10px 16px;  /* Increased padding */
     cursor: pointer;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 12px;  /* Increased gap */
+    transition: background-color 0.2s;  /* Added transition */
 }
 
-.context-menu li:hover {
-    background: var(--hover);
+.context-menu li:hover:not(.disabled) {
+    background-color: var(--bg-secondary);  /* Changed from hover-color */
+}
+
+.context-menu li .material-symbols-rounded {
+    font-size: 20px;
+    color: var(--text-secondary);  /* Added secondary color for icons */
+}
+
+.context-menu li.disabled {
+    opacity: 0.5;
+    cursor: default;
+    background-color: var(--bg-secondary);
 }
