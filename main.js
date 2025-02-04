@@ -120,18 +120,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function adjustColorBrightness(color) {
         if (!color) return [25, 25, 35];
-        const brightness = (color[0] * 299 + color[1] * 587 + color[2] * 114) / 1000;
-        const maxBrightness = 255;
         
-        if (brightness > maxBrightness / 2) {
-            const darknessFactor = Math.min(0.25, 0.8 - (brightness / maxBrightness));
-            return color.map(c => {
-                const darkened = Math.max(15, Math.round(c * darknessFactor));
-                const saturated = darkened * 1.2;
-                return Math.min(255, Math.round(saturated));
-            });
-        }
-        return color.map(c => Math.min(255, Math.round(c * 1.1)));
+        const hsl = rgbToHsl(color);
+        
+        // Boost saturation
+        hsl[1] = Math.min(1, hsl[1] * 1.5); // 50% saturation boost
+        
+        // Force brightness to be at least 25%
+        hsl[2] = Math.max(0.25, Math.min(0.4, hsl[2])); // Ensure minimum 25% brightness
+        
+        return hslToRgb(hsl);
     }
 
     function calculateContrast(rgb1, rgb2) {
@@ -172,22 +170,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         const root = document.documentElement;
         let { primary, secondary, darkest, lightest, mostColorful } = colorData;
         
+        // Ensure darkest color has minimum brightness
+        const darkestHsl = rgbToHsl(darkest);
+        darkestHsl[2] = Math.max(0.25, darkestHsl[2]); // Force minimum 25% brightness
+        darkest = hslToRgb(darkestHsl);
+        
         primary = adjustColorBrightnessToPercentage(primary, 0.35);
         secondary = adjustColorBrightnessToPercentage(secondary, 0.35);
         
         const glowColor = calculateGlowColor(mostColorful);
         
-        const darkestBrightness = (darkest[0] * 299 + darkest[1] * 587 + darkest[2] * 114) / 1000;
-        if (darkestBrightness > 128) {
-            darkest = primary.map(c => Math.max(20, Math.round(c * 0.3)));
-        }
-        
-        const isDarkBackground = calculateLuminance(darkest) < 0.5;
-        const textColor = isDarkBackground ? [255, 255, 255] : [0, 0, 0];
-        lightest = adjustColorContrast(darkest, textColor, 8);
-        const adjustedSecondaryText = adjustColorContrast(secondary, textColor, 7);
+        // Ensure text colors have proper contrast
+        const textColor = [255, 255, 255]; // Always use white text for better readability
+        lightest = textColor;
+        const adjustedSecondaryText = [230, 230, 230]; // Light gray that's still very readable
         const textTint = adjustColorContrast(darkest, mostColorful, 8);
         
+        // Adjust sidebar colors to ensure they're visible
         const sidebarPrimary = adjustColorContrast(darkest, primary, 7);
         const sidebarSecondary = adjustColorContrast(darkest, secondary, 7);
         
@@ -199,11 +198,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             '--bg-secondary': `linear-gradient(135deg, ${toHex(sidebarPrimary)} 0%, ${toHex(sidebarSecondary)} 100%)`,
             '--bg-tertiary': `linear-gradient(135deg, ${toHex(sidebarSecondary)} 0%, ${toHex(adjustColorBrightness(sidebarSecondary))} 100%)`,
             '--text-primary': toHex(lightest),
-            '--text-secondary': toRGBA(adjustedSecondaryText, 0.8),
+            '--text-secondary': toRGBA(adjustedSecondaryText, 0.95), // Increased opacity for better visibility
             '--accent-color': toHex(lightest),
             '--hover-color': toRGBA(secondary, 0.4),
             '--text-tint': toHex(textTint),
-            '--album-glow': toRGBA(glowColor, 0.5)
+            '--album-glow': toRGBA(glowColor, 0.5),
+            '--button-text': toHex([255, 255, 255]) // Ensure buttons always have white text
         };
 
         requestAnimationFrame(() => {
@@ -219,9 +219,63 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function adjustColorBrightnessToPercentage(color, percentage) {
-        const brightness = (color[0] * 299 + color[1] * 587 + color[2] * 114) / 1000;
-        const factor = percentage * 255 / brightness;
-        return color.map(c => Math.min(255, Math.round(c * factor)));
+        const hsl = rgbToHsl(color);
+        
+        // Ensure minimum saturation and brightness
+        hsl[1] = Math.max(0.3, hsl[1]); // Minimum 30% saturation
+        hsl[2] = Math.min(Math.max(0.25, hsl[2]), 0.85); // Force brightness between 25% and 85%
+        
+        const adjustedRgb = hslToRgb(hsl);
+        return adjustedRgb.map(c => Math.min(255, Math.round(c)));
+    }
+
+    function rgbToHsl(rgb) {
+        let [r, g, b] = rgb.map(x => x / 255);
+        const max = Math.max(r, g, b);
+        const min = Math.min(r, g, b);
+        let h, s, l = (max + min) / 2;
+
+        if (max === min) {
+            h = s = 0;
+        } else {
+            const d = max - min;
+            s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+            switch (max) {
+                case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                case g: h = (b - r) / d + 2; break;
+                case b: h = (r - g) / d + 4; break;
+            }
+            h /= 6;
+        }
+
+        return [h, s, l];
+    }
+
+    function hslToRgb(hsl) {
+        let [h, s, l] = hsl;
+        let r, g, b;
+
+        if (s === 0) {
+            r = g = b = l;
+        } else {
+            const hue2rgb = (p, q, t) => {
+                if (t < 0) t += 1;
+                if (t > 1) t -= 1;
+                if (t < 1/6) return p + (q - p) * 6 * t;
+                if (t < 1/2) return q;
+                if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+                return p;
+            };
+
+            const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+            const p = 2 * l - q;
+
+            r = hue2rgb(p, q, h + 1/3);
+            g = hue2rgb(p, q, h);
+            b = hue2rgb(p, q, h - 1/3);
+        }
+
+        return [r, g, b].map(x => Math.round(x * 255));
     }
 
     for (const [key, element] of Object.entries(elements)) {

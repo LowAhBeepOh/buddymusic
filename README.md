@@ -1,22 +1,8 @@
 # Buddy Music
 An offline music from the Buddy project / ecosystem
 
-# Newest Update (Ver. 0.XA > 0.XB)
-## 🔥 Major Features
-- Storage Management: You can now save songs locally to the web app! Favorited songs are automatically saved by default.
-- UI: The UI has been updated to look better.
-- Better Search: Improved the search bar, artist abbreviations are new. For example "wave to earth" becomes "w2e"/"wte" (wave to earth mentioned!! :o)
-
-## 🔧 Minor Changes
-- Updated placeholder texts and UI labels
-- Other small improvements
-- Enhanced accessibility with OpenDyslexic font support
-- Visual Improvements: Updated adaptive theme visualizer
-
-## 💻 Code Changes
-- Added a class in JS to fix some problems with the queue
-- Updated file organization and code structure
-- Added IndexedDB for favorites and local song storage
+# Newest Update (Ver. 0.XB > 0.XC)
+Update coming soon
 
 ## How to use
 To setup this webapp, you go into the website. (or open the index.html file if you downlaoded the code)
