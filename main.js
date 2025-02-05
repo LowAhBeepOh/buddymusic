@@ -670,22 +670,43 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function updatePlaylist(files) {
         const startIndex = songs.length;
         const settings = getSettings();
-        
-        for (let i = 0; i < files.length; i++) {
-            const file = files[i];
-            const metadata = await getMetadata(file);
-            const song = { file, metadata };
-            songs.push(song);
-            
-            if (settings.autoSave === 'all') {
-                await songsDB.saveSong(song);
-            } else if (settings.autoSave === 'favorites' && isFavorite(metadata)) {
-                await songsDB.saveSong(song);
-            }
+        const batchSize = 10;
+        const updates = [];
+
+        // Process files in batches to prevent UI freezing
+        for (let i = 0; i < files.length; i += batchSize) {
+            const batch = files.slice(i, i + batchSize);
+            const batchPromises = batch.map(async file => {
+                try {
+                    const metadata = await getMetadata(file);
+                    const song = { file, metadata };
+                    songs.push(song);
+
+                    if (settings.autoSave === 'all') {
+                        updates.push(songsDB.saveSong(song));
+                    } else if (settings.autoSave === 'favorites' && isFavorite(metadata)) {
+                        updates.push(songsDB.saveSong(song));
+                    }
+                    return song;
+                } catch (error) {
+                    console.error('Error processing file:', file.name, error);
+                    return null;
+                }
+            });
+
+            // Process batch and update UI
+            await Promise.all(batchPromises);
+            visibleSongs = [...songs];
+            updatePlaylistView(visibleSongs);
+
+            // Allow UI to update between batches
+            await new Promise(resolve => setTimeout(resolve, 0));
         }
-        
-        visibleSongs = [...songs];
-        updatePlaylistView(visibleSongs);
+
+        // Save to database in background
+        Promise.all(updates).catch(error => {
+            console.error('Error saving songs to database:', error);
+        });
     }
 
     function createPlaylistItem(song, index, clickHandler) {
@@ -1367,9 +1388,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     let tempSearchResults = [];
 
     function updatePlaylistView(songList) {
-        elements.playlist.innerHTML = '';
-        visibleSongs = songList;
-        
+        const fragment = document.createDocumentFragment();
         songList.forEach((song, index) => {
             const div = createPlaylistItem(
                 song,
@@ -1379,7 +1398,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (songs[currentSongIndex] === song) {
                 div.classList.add('active');
             }
-            elements.playlist.appendChild(div);
+            fragment.appendChild(div);
+        });
+
+        requestAnimationFrame(() => {
+            elements.playlist.innerHTML = '';
+            elements.playlist.appendChild(fragment);
         });
     }
 
@@ -1616,7 +1640,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function updatePlaylistView(songList) {
-        elements.playlist.innerHTML = '';
+        const fragment = document.createDocumentFragment();
         songList.forEach((song, index) => {
             const div = createPlaylistItem(
                 song,
@@ -1626,7 +1650,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (songs[currentSongIndex] === song) {
                 div.classList.add('active');
             }
-            elements.playlist.appendChild(div);
+            fragment.appendChild(div);
+        });
+
+        requestAnimationFrame(() => {
+            elements.playlist.innerHTML = '';
+            elements.playlist.appendChild(fragment);
         });
     }
 
@@ -2073,31 +2102,48 @@ function playSong(song) {
     
     if (songId !== currentlyPlayingSongId) {
         currentlyPlayingSongId = songId;
-        
-        elements.currentSongTitle.textContent = song.metadata.title;
-        elements.artistName.textContent = song.metadata.artist;
-        elements.albumName.textContent = song.metadata.album;
-        elements.coverArt.src = song.metadata.coverUrl || 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
 
+        // Create a new audio context only if needed
+        if (!audioContext) {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
+
+        // Clean up previous audio resources
+        if (elements.audioPlayer.src) {
+            const oldSrc = elements.audioPlayer.src;
+            elements.audioPlayer.src = '';
+            URL.revokeObjectURL(oldSrc);
+        }
+
+        // Update UI elements
+        requestAnimationFrame(() => {
+            elements.currentSongTitle.textContent = song.metadata.title;
+            elements.artistName.textContent = song.metadata.artist;
+            elements.albumName.textContent = song.metadata.album;
+            elements.coverArt.src = song.metadata.coverUrl || 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+        });
+
+        // Handle adaptive theme
         if (document.documentElement.getAttribute('data-theme') === 'adaptive' && song.metadata.coverUrl) {
             const img = new Image();
             img.crossOrigin = "Anonymous";
             img.onerror = () => {
-                updateAdaptiveTheme({
+                requestAnimationFrame(() => updateAdaptiveTheme({
                     primary: [30, 30, 30],
                     secondary: [45, 45, 45],
                     darkest: [20, 20, 20],
                     lightest: [255, 255, 255],
                     mostColorful: [100, 100, 100]
-                });
+                }));
             };
             img.onload = async () => {
                 const colors = await getImageColors(img);
-                updateAdaptiveTheme(colors);
+                requestAnimationFrame(() => updateAdaptiveTheme(colors));
             };
             img.src = song.metadata.coverUrl;
         }
 
+        // Set up MediaSession API
         if ('mediaSession' in navigator) {
             navigator.mediaSession.metadata = new MediaMetadata({
                 title: song.metadata.title,
@@ -2107,18 +2153,14 @@ function playSong(song) {
                     { src: song.metadata.coverUrl, sizes: '512x512', type: 'image/jpeg' }
                 ] : []
             });
-
-            navigator.mediaSession.setActionHandler('play', () => playAudio());
-            navigator.mediaSession.setActionHandler('pause', () => pauseAudio());
-            navigator.mediaSession.setActionHandler('previoustrack', () => elements.prevBtn.click());
-            navigator.mediaSession.setActionHandler('nexttrack', () => elements.nextBtn.click());
         }
 
+        // Create and set up audio source
         const url = URL.createObjectURL(song.file);
         elements.audioPlayer.src = url;
         
-        if (!audioContext) {
-            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        // Set up audio processing
+        if (!analyser && audioContext) {
             analyser = audioContext.createAnalyser();
             analyser.fftSize = 256;
             const source = audioContext.createMediaElementSource(elements.audioPlayer);
@@ -2132,25 +2174,30 @@ function playSong(song) {
         }
 
         queueManager.addToHistory(song);
-        
         highlightCurrentSong();
         updateSongTitleScroll();
 
+        // Clean up URL after loading
         elements.audioPlayer.oncanplay = () => {
             URL.revokeObjectURL(url);
         };
     }
 
+    // Handle playback
     if (elements.autoplayToggle.checked || isPlaying) {
         elements.audioPlayer.play()
             .then(() => {
                 isPlaying = true;
-                elements.playBtn.innerHTML = '<span class="material-symbols-rounded">pause</span>';
+                requestAnimationFrame(() => {
+                    elements.playBtn.innerHTML = '<span class="material-symbols-rounded">pause</span>';
+                });
             })
             .catch(error => {
                 console.error('Playback failed:', error);
                 isPlaying = false;
-                elements.playBtn.innerHTML = '<span class="material-symbols-rounded">play_arrow</span>';
+                requestAnimationFrame(() => {
+                    elements.playBtn.innerHTML = '<span class="material-symbols-rounded">play_arrow</span>';
+                });
             });
     }
 }
