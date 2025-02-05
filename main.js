@@ -884,10 +884,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
+    function updateDocumentTitle(song) {
+        if (song) {
+            document.title = `${song.metadata.title} - ${song.metadata.artist}`;
+        } else {
+            document.title = "Buddy Music - ver 0.XB";
+        }
+    }
+
     const originalLoadSong = loadSong;
     loadSong = async function(index) {
         const song = songs[index];
         if (song) {
+            updateDocumentTitle(song);
             if (document.documentElement.getAttribute('data-theme') === 'adaptive') {
                 if (song.metadata.coverUrl) {
                     const img = new Image();
@@ -1095,12 +1104,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         elements.audioPlayer.play();
         isPlaying = true;
         elements.playBtn.innerHTML = '<span class="material-symbols-rounded">pause</span>';
+        updateDocumentTitle(songs[currentSongIndex]);
     }
 
     function pauseAudio() {
         elements.audioPlayer.pause();
         isPlaying = false;
         elements.playBtn.innerHTML = '<span class="material-symbols-rounded">play_arrow</span>';
+        updateDocumentTitle(null);
     }
 
     elements.playBtn.addEventListener('click', () => {
