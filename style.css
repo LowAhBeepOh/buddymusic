@@ -1421,3 +1421,37 @@ select:focus {
 [data-theme="silver"] .controls button .material-symbols-rounded {
     color: var(--text-primary);
 }
+
+[data-reduce-animations="true"] {
+    --transition-duration: 0s !important;
+    --animation-duration: 0s !important;
+}
+
+[data-reduce-animations="true"] *,
+[data-reduce-animations="true"] *::before,
+[data-reduce-animations="true"] *::after {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+    transition-duration: 0s !important;
+    transition-delay: 0s !important;
+    scroll-behavior: auto !important;
+}
+
+[data-reduce-animations="true"] .playlist-item:hover {
+    transform: none !important;
+}
+
+[data-reduce-animations="true"] .tab-btn:hover {
+    transform: none !important;
+}
+
+[data-reduce-animations="true"] .album-art-wrapper,
+[data-reduce-animations="true"] .album-art-wrapper::before,
+[data-reduce-animations="true"] .album-art {
+    transition: none !important;
+}
+
+[data-reduce-animations="true"] .song-metadata h3.scroll {
+    animation: none !important;
+    text-overflow: ellipsis;
+}

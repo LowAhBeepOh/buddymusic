@@ -659,10 +659,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         return JSON.parse(localStorage.getItem('buddy-music-settings')) || {
             fontSize: 'medium',
             fontFamily: 'inter',
-            highContrast: false,
             reduceAnimations: false,
-            defaultVolume: 100,
-            autoplay: false,
             autoSave: 'favorites'
         };
     }
@@ -1676,19 +1673,20 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         elements.fontSizeSelect.value = settings.fontSize;
         elements.fontFamilySelect.value = settings.fontFamily;
-        elements.highContrastToggle.checked = settings.highContrast;
         elements.reduceAnimationsToggle.checked = settings.reduceAnimations;
-        elements.defaultVolumeSlider.value = settings.defaultVolume;
-        elements.autoplayToggle.checked = settings.autoplay;
         elements.autoSaveSelect.value = settings.autoSave;
     }
 
     function applySettings(settings) {
         document.documentElement.setAttribute('data-font-size', settings.fontSize);
         document.documentElement.setAttribute('data-font', settings.fontFamily);
-        document.documentElement.setAttribute('data-high-contrast', settings.highContrast);
-        if (elements.audioPlayer) {
-            elements.audioPlayer.volume = settings.defaultVolume / 100;
+        document.documentElement.setAttribute('data-reduce-animations', settings.reduceAnimations);
+
+        // If reduce animations is enabled, stop any ongoing animations
+        if (settings.reduceAnimations) {
+            document.querySelectorAll('.scroll').forEach(el => {
+                el.classList.remove('scroll');
+            });
         }
     }
 
@@ -1696,10 +1694,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const settings = {
             fontSize: elements.fontSizeSelect.value,
             fontFamily: elements.fontFamilySelect.value,
-            highContrast: elements.highContrastToggle.checked,
             reduceAnimations: elements.reduceAnimationsToggle.checked,
-            defaultVolume: elements.defaultVolumeSlider.value,
-            autoplay: elements.autoplayToggle.checked,
             autoSave: elements.autoSaveSelect.value
         };
         localStorage.setItem('buddy-music-settings', JSON.stringify(settings));
@@ -1717,10 +1712,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     [
         'fontSizeSelect',
         'fontFamilySelect',
-        'highContrastToggle',
         'reduceAnimationsToggle',
-        'defaultVolumeSlider',
-        'autoplayToggle',
         'autoSaveSelect'
     ].forEach(settingId => {
         elements[settingId].addEventListener('change', saveSettings);
