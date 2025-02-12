@@ -664,13 +664,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
     }
 
-    async function updatePlaylist(files) {
+    async function updatePlaylist(files, onProgress) {
         const startIndex = songs.length;
         const settings = getSettings();
         const batchSize = 10;
         const updates = [];
+        let processed = 0;
+        let batchProcessedCount = 0;
 
-        // Process files in batches to prevent UI freezing
         for (let i = 0; i < files.length; i += batchSize) {
             const batch = files.slice(i, i + batchSize);
             const batchPromises = batch.map(async file => {
@@ -691,16 +692,17 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             });
 
-            // Process batch and update UI
             await Promise.all(batchPromises);
+            batchProcessedCount = batch.length;
+            processed += batch.length;
+            if (onProgress) onProgress(batchProcessedCount);
+            
             visibleSongs = [...songs];
             updatePlaylistView(visibleSongs);
 
-            // Allow UI to update between batches
             await new Promise(resolve => setTimeout(resolve, 0));
         }
 
-        // Save to database in background
         Promise.all(updates).catch(error => {
             console.error('Error saving songs to database:', error);
         });
@@ -980,7 +982,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (elements.artistName) elements.artistName.textContent = metadata.artist;
         if (elements.albumName) elements.albumName.textContent = metadata.album;
         if (elements.coverArt) {
-            elements.coverArt.src = metadata.coverUrl || 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+            if (metadata.coverUrl) {
+                elements.coverArt.src = metadata.coverUrl;
+                elements.coverArt.onerror = () => {
+                    elements.coverArt.src = './data/images/albumCoverFiller.png';
+                };
+            } else {
+                elements.coverArt.src = './data/images/albumCoverFiller.png';
+            }
         }
 
         if ('mediaSession' in navigator) {
@@ -1721,25 +1730,80 @@ document.addEventListener('DOMContentLoaded', async () => {
     initializeSettings();
 
     elements.folderInput.addEventListener('change', async (e) => {
-        const files = Array.from(e.target.files).filter(file => 
-            file.type.startsWith('audio/') || 
-            file.name.endsWith('.mp3') || 
-            file.name.endsWith('.wav') ||
-            file.name.endsWith('.ogg') ||
-            file.name.endsWith('.m4a')
-        );
+        const allFiles = Array.from(e.target.files);
+        
+        // Sort files into folders for progress tracking
+        const folders = new Map();
+        let totalAudioFiles = 0;
+        
+        allFiles.forEach(file => {
+            const path = file.webkitRelativePath;
+            const folder = path.split('/')[0];
+            if (!folders.has(folder)) {
+                folders.set(folder, []);
+            }
+            if (file.type.startsWith('audio/') || 
+                file.name.endsWith('.mp3') || 
+                file.name.endsWith('.wav') ||
+                file.name.endsWith('.ogg') ||
+                file.name.endsWith('.m4a')) {
+                folders.get(folder).push(file);
+                totalAudioFiles++;
+            }
+        });
 
-        if (files.length === 0) {
-            alert('No audio files found in the selected folder');
+        if (folders.size === 0 || totalAudioFiles === 0) {
+            alert('No audio files found in the selected folders');
             return;
         }
 
-        const startIndex = songs.length;
-        await updatePlaylist(files);
+        let processedFiles = 0;
         
+        const progress = document.createElement('div');
+        progress.className = 'folder-progress';
+        progress.innerHTML = `
+            <div class="progress-text">Processing files: 0/${totalAudioFiles}</div>
+            <div class="progress-bar">
+                <div class="progress-fill"></div>
+            </div>
+        `;
+        
+        const sidebar = document.querySelector('.sidebar');
+        const playlist = document.getElementById('playlist');
+        sidebar.insertBefore(progress, playlist);
+
+        const progressFill = progress.querySelector('.progress-fill');
+        const progressText = progress.querySelector('.progress-text');
+
+        const startIndex = songs.length;
+        
+        // Process folders sequentially
+        for (const [folderName, files] of folders) {
+            const folderFiles = files.length;
+            
+            await updatePlaylist(files, (processedCount) => {
+                processedFiles += processedCount;
+                requestAnimationFrame(() => {
+                    const percent = (processedFiles / totalAudioFiles) * 100;
+                    progressFill.style.width = `${percent}%`;
+                    progressText.textContent = `Processing files: ${processedFiles}/${totalAudioFiles}`;
+                });
+            });
+            
+            await new Promise(resolve => setTimeout(resolve, 50));
+        }
+
         if (startIndex === 0 && songs.length > 0) {
             loadSong(0);
         }
+        
+        // Fade out and remove progress indicator
+        progress.style.opacity = '1';
+        await new Promise(resolve => setTimeout(resolve, 500));
+        progress.style.opacity = '0';
+        progress.style.transition = 'opacity 0.5s ease';
+        await new Promise(resolve => setTimeout(resolve, 500));
+        progress.remove();
         
         elements.folderInput.value = '';
     });
@@ -2123,7 +2187,14 @@ function playSong(song) {
             elements.currentSongTitle.textContent = song.metadata.title;
             elements.artistName.textContent = song.metadata.artist;
             elements.albumName.textContent = song.metadata.album;
-            elements.coverArt.src = song.metadata.coverUrl || 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+            if (song.metadata.coverUrl) {
+                elements.coverArt.src = song.metadata.coverUrl;
+                elements.coverArt.onerror = () => {
+                    elements.coverArt.src = './data/images/albumCoverFiller.png';
+                };
+            } else {
+                elements.coverArt.src = './data/images/albumCoverFiller.png';
+            }
         });
 
         // Handle adaptive theme
