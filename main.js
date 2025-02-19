@@ -996,6 +996,48 @@ document.addEventListener('DOMContentLoaded', async () => {
                 album: metadata.album,
                 artwork: metadata.coverUrl ? [{ src: metadata.coverUrl, sizes: '512x512', type: 'image/jpeg' }] : []
             });
+
+            // Add MediaSession action handlers
+            navigator.mediaSession.setActionHandler('play', () => {
+                playAudio();
+            });
+            
+            navigator.mediaSession.setActionHandler('pause', () => {
+                pauseAudio();
+            });
+            
+            navigator.mediaSession.setActionHandler('previoustrack', () => {
+                if (currentSongIndex > 0) {
+                    loadSong(currentSongIndex - 1);
+                } else {
+                    loadSong(songs.length - 1);
+                }
+            });
+            
+            navigator.mediaSession.setActionHandler('nexttrack', () => {
+                playNext();
+            });
+            
+            navigator.mediaSession.setActionHandler('seekto', (details) => {
+                if (details.fastSeek && 'fastSeek' in elements.audioPlayer) {
+                    elements.audioPlayer.fastSeek(details.seekTime);
+                    return;
+                }
+                elements.audioPlayer.currentTime = details.seekTime;
+            });
+            
+            navigator.mediaSession.setActionHandler('seekbackward', (details) => {
+                const skipTime = details.seekOffset || 10;
+                elements.audioPlayer.currentTime = Math.max(elements.audioPlayer.currentTime - skipTime, 0);
+            });
+            
+            navigator.mediaSession.setActionHandler('seekforward', (details) => {
+                const skipTime = details.seekOffset || 10;
+                elements.audioPlayer.currentTime = Math.min(
+                    elements.audioPlayer.currentTime + skipTime,
+                    elements.audioPlayer.duration
+                );
+            });
         }
 
         if (elements.audioPlayer) {
@@ -2223,6 +2265,78 @@ function playSong(song) {
                 artwork: song.metadata.coverUrl ? [
                     { src: song.metadata.coverUrl, sizes: '512x512', type: 'image/jpeg' }
                 ] : []
+            });
+
+            // Add MediaSession action handlers
+            navigator.mediaSession.setActionHandler('play', () => {
+                playAudio();
+            });
+            
+            navigator.mediaSession.setActionHandler('pause', () => {
+                pauseAudio();
+            });
+            
+            navigator.mediaSession.setActionHandler('previoustrack', () => {
+                if (currentSongIndex > 0) {
+                    loadSong(currentSongIndex - 1);
+                } else {
+                    loadSong(songs.length - 1);
+                }
+            });
+            
+            navigator.mediaSession.setActionHandler('nexttrack', () => {
+                playNext();
+            });
+            
+            navigator.mediaSession.setActionHandler('seekto', (details) => {
+                if (details.fastSeek && 'fastSeek' in elements.audioPlayer) {
+                    elements.audioPlayer.fastSeek(details.seekTime);
+                    return;
+                }
+                elements.audioPlayer.currentTime = details.seekTime;
+            });
+            
+            navigator.mediaSession.setActionHandler('seekbackward', (details) => {
+                const skipTime = details.seekOffset || 10;
+                elements.audioPlayer.currentTime = Math.max(elements.audioPlayer.currentTime - skipTime, 0);
+            });
+            
+            navigator.mediaSession.setActionHandler('seekforward', (details) => {
+                const skipTime = details.seekOffset || 10;
+                elements.audioPlayer.currentTime = Math.min(
+                    elements.audioPlayer.currentTime + skipTime,
+                    elements.audioPlayer.duration
+                );
+            });
+
+            // Add shuffle handler
+            navigator.mediaSession.setActionHandler('shuffle', () => {
+                isShuffled = !isShuffled;
+                elements.shuffleBtn.style.color = isShuffled ? '#1db954' : '#fff';
+                elements.shuffleBtn.click(); // Trigger the UI update
+            });
+
+            // Add loop handler
+            navigator.mediaSession.setActionHandler('seekmode', () => {
+                switch (loopState) {
+                    case 'none':
+                        loopState = 'single';
+                        elements.audioPlayer.loop = true;
+                        elements.loopBtn.innerHTML = '<span class="material-symbols-rounded">repeat_one</span>';
+                        break;
+                    case 'single':
+                        loopState = 'all';
+                        elements.audioPlayer.loop = false;
+                        elements.loopBtn.innerHTML = '<span class="material-symbols-rounded">repeat</span>';
+                        break;
+                    case 'all':
+                        loopState = 'none';
+                        elements.audioPlayer.loop = false;
+                        elements.loopBtn.innerHTML = '<span class="material-symbols-rounded">repeat</span>';
+                        break;
+                }
+                elements.loopBtn.style.color = loopState !== 'none' ? '#1db954' : '#fff';
+                elements.loopBtn.click(); // Trigger the UI update
             });
         }
 
