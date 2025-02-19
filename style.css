@@ -65,7 +65,7 @@
     --bg-tertiary: var(--adaptive-tertiary, #35354a);
     --text-primary: var(--adaptive-text-primary, #ffffff);
     --text-secondary: rgba(255, 255, 255, 0.95);
-    --accent-color: var(--adaptive-accent, #ffffff);
+    --accent-color: var(--adaptive-accent, #FFFFFF);
     --hover-color: var(--adaptive-hover, rgba(255, 255, 255, 0.12));
     --scrollbar-bg: rgba(255, 255, 255, 0.1);
     --scrollbar-thumb: rgba(255, 255, 255, 0.3);
@@ -82,40 +82,6 @@
         background-color 0.6s cubic-bezier(0.4, 0, 0.2, 1),
         color 0.6s cubic-bezier(0.4, 0, 0.2, 1),
         border-color 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-:root[data-theme="wii"] {
-    --bg-primary: #f6f6f6;
-    --bg-secondary: #ffffff;
-    --bg-tertiary: #e8e8e8;
-    --text-primary: #323232;
-    --text-secondary: #555555;
-    --accent-color: #009cff;
-    --hover-color: #e6f4ff;
-    --button-bg: #ffffff;
-    --button-border: #d8d8d8;
-    --button-shadow: rgba(0, 0, 0, 0.08);
-    --channel-gradient: linear-gradient(90deg, 
-        #ffffff 0%,
-        #ffffff 12%,
-        #e8e8e8 12%,
-        #e8e8e8 24%,
-        #ffffff 24%,
-        #ffffff 36%,
-        #e8e8e8 36%,
-        #e8e8e8 48%,
-        #ffffff 48%,
-        #ffffff 60%,
-        #e8e8e8 60%,
-        #e8e8e8 72%,
-        #ffffff 72%,
-        #ffffff 84%,
-        #e8e8e8 84%,
-        #e8e8e8 100%
-    );
-    --highlight-shadow: 0 2px 8px rgba(0, 156, 255, 0.25);
-    --button-highlight: #f0f0f0;
-    --player-text: #323232;
 }
 
 :root[data-theme="silver"] {
@@ -1509,4 +1475,58 @@ select:focus {
 
 [data-reduce-animations="true"] .progress-fill {
     transition: none;
+}
+
+#shuffle-btn:active, #loop-btn:active {
+    background: none !important;
+    border: none !important;
+    color: #ff0000 !important;
+    transition: none !important;
+}
+
+button#shuffle-btn:active,
+button#loop-btn:active {
+    background: none !important;
+    border: none !important;
+    color: #ff0000 !important;
+    transform: none !important;
+}
+
+[data-theme] button#shuffle-btn:active,
+[data-theme] button#loop-btn:active {
+    background: none !important;
+    border: none !important;
+    color: #ff0000 !important;
+}
+
+/* Add these specific styles */
+button#shuffle-btn .material-symbols-rounded,
+button#loop-btn .material-symbols-rounded {
+    transition: color 0.2s ease;
+}
+
+[data-theme] button#shuffle-btn.active .material-symbols-rounded,
+[data-theme] button#loop-btn.active .material-symbols-rounded {
+    color: #1DB954 !important;
+}
+
+/* Add these specific styles near other button styles */
+#shuffle-btn.active,
+#loop-btn.active {
+    color: #1DB954 !important;
+}
+
+[data-theme="silver"] #shuffle-btn.active,
+[data-theme="silver"] #loop-btn.active,
+[data-theme="adaptive"] #shuffle-btn.active,
+[data-theme="adaptive"] #loop-btn.active {
+    color: #1DB954 !important;
+    background: rgba(0, 0, 0, 0.2) !important;
+}
+
+[data-theme="silver"] #shuffle-btn.active:hover,
+[data-theme="silver"] #loop-btn.active:hover,
+[data-theme="adaptive"] #shuffle-btn.active:hover,
+[data-theme="adaptive"] #loop-btn.active:hover {
+    background: rgba(0, 0, 0, 0.3) !important;
 }

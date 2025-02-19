@@ -929,7 +929,25 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     let currentlyPlayingSongId = null;
 
-    function loadSong(index) {
+    async function loadSong(index) {
+        const song = songs[index];
+        if (!song) return;
+
+        try {
+            let audioBuffer = audioResourceManager.audioBuffers.get(song.file.name);
+            if (!audioBuffer) {
+                audioBuffer = await audioResourceManager.loadAudio(song.file);
+            }
+
+            if (audioBuffer) {
+                const blob = new Blob([audioBuffer], { type: song.file.type });
+                elements.audioPlayer.src = URL.createObjectURL(blob);
+                audioResourceManager.clearOldBuffers();
+            }
+        } catch (error) {
+            console.error('Error loading song:', error);
+        }
+
         if (!visibleSongs?.length) {
             visibleSongs = [...songs];
         }
@@ -1178,7 +1196,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     elements.nextBtn.addEventListener('click', playNext);
 
     function playNext() {
-        if (!visibleSongs || !visibleSongs.length) return;
+        if (!songs.length) return;
         
         if (queue.length > 0) {
             const nextSong = queue.shift();
@@ -1186,18 +1204,26 @@ document.addEventListener('DOMContentLoaded', async () => {
             loadSong(nextIndex);
             updateQueueView();
         } else if (isShuffled) {
-            const currentVisibleIndex = visibleSongs.indexOf(songs[currentSongIndex]);
-            let nextIndex;
-            
-            do {
-                nextIndex = Math.floor(Math.random() * visibleSongs.length);
-            } while (nextIndex === currentVisibleIndex && visibleSongs.length > 1);
-            
-            loadSong(nextIndex);
+            const currentShuffledIndex = shuffledSongs.indexOf(songs[currentSongIndex]);
+            if (currentShuffledIndex < shuffledSongs.length - 1) {
+                const nextSong = shuffledSongs[currentShuffledIndex + 1];
+                const nextIndex = songs.indexOf(nextSong);
+                loadSong(nextIndex);
+            } else if (loopState === 'all') {
+                // Re-shuffle when we reach the end, keeping current song first
+                const currentSong = songs[currentSongIndex];
+                const remainingSongs = songs.filter(song => song !== currentSong);
+                for (let i = remainingSongs.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [remainingSongs[i], remainingSongs[j]] = [remainingSongs[j], remainingSongs[i]];
+                }
+                shuffledSongs = [currentSong, ...remainingSongs];
+                loadSong(songs.indexOf(shuffledSongs[0]));
+            }
         } else {
-            const currentVisibleIndex = visibleSongs.indexOf(songs[currentSongIndex]);
-            if (currentVisibleIndex < visibleSongs.length - 1) {
-                loadSong(currentVisibleIndex + 1);
+            // Normal sequential playback
+            if (currentSongIndex < songs.length - 1) {
+                loadSong(currentSongIndex + 1);
             } else if (loopState === 'all') {
                 loadSong(0);
             }
@@ -1206,7 +1232,27 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     elements.shuffleBtn.addEventListener('click', () => {
         isShuffled = !isShuffled;
-        elements.shuffleBtn.style.color = isShuffled ? '#1db954' : '#fff';
+        elements.shuffleBtn.classList.toggle('active', isShuffled);
+        const iconSpan = elements.shuffleBtn.querySelector('.material-symbols-rounded');
+        if (iconSpan) {
+            iconSpan.style.color = isShuffled ? '#1DB954' : '';
+        }
+
+        if (isShuffled) {
+            // Create a new shuffled array, but keep the current song at its position
+            const currentSong = songs[currentSongIndex];
+            const remainingSongs = songs.filter((_, index) => index !== currentSongIndex);
+            
+            // Shuffle the remaining songs
+            for (let i = remainingSongs.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [remainingSongs[i], remainingSongs[j]] = [remainingSongs[j], remainingSongs[i]];
+            }
+            
+            // Put the current song back at the start of the shuffled list
+            shuffledSongs = [currentSong, ...remainingSongs];
+            console.log('Shuffled song order:', shuffledSongs.map(song => song.metadata.title));
+        }
     });
 
     elements.loopBtn.addEventListener('click', () => {
@@ -1215,19 +1261,24 @@ document.addEventListener('DOMContentLoaded', async () => {
                 loopState = 'single';
                 elements.audioPlayer.loop = true;
                 elements.loopBtn.innerHTML = '<span class="material-symbols-rounded">repeat_one</span>';
+                elements.loopBtn.classList.add('active');
+                elements.loopBtn.querySelector('.material-symbols-rounded').style.color = '#1DB954';
                 break;
             case 'single':
                 loopState = 'all';
                 elements.audioPlayer.loop = false;
                 elements.loopBtn.innerHTML = '<span class="material-symbols-rounded">repeat</span>';
+                elements.loopBtn.classList.add('active');
+                elements.loopBtn.querySelector('.material-symbols-rounded').style.color = '#1DB954';
                 break;
             case 'all':
                 loopState = 'none';
                 elements.audioPlayer.loop = false;
                 elements.loopBtn.innerHTML = '<span class="material-symbols-rounded">repeat</span>';
+                elements.loopBtn.classList.remove('active');
+                elements.loopBtn.querySelector('.material-symbols-rounded').style.color = '';
                 break;
         }
-        elements.loopBtn.style.color = loopState !== 'none' ? '#1db954' : '#fff';
     });
 
     elements.audioPlayer.addEventListener('timeupdate', () => {
@@ -1443,24 +1494,95 @@ document.addEventListener('DOMContentLoaded', async () => {
     let visibleSongs = [...songs];
     let tempSearchResults = [];
 
-    function updatePlaylistView(songList) {
-        const fragment = document.createDocumentFragment();
-        songList.forEach((song, index) => {
-            const div = createPlaylistItem(
-                song,
-                songs.indexOf(song),
-                loadSong
+    class VirtualScroller {
+        constructor(container, itemHeight, renderItem) {
+            this.container = container;
+            this.itemHeight = itemHeight;
+            this.renderItem = renderItem;
+            this.items = [];
+            this.cachedItems = new Map();
+            this.visibleItems = new Set();
+            this.lastScrollTop = 0;
+    
+            this.container.style.position = 'relative';
+            this.innerContainer = document.createElement('div');
+            this.container.appendChild(this.innerContainer);
+    
+            this.container.addEventListener('scroll', this.onScroll.bind(this));
+            this.resizeObserver = new ResizeObserver(() => this.render());
+            this.resizeObserver.observe(this.container);
+        }
+    
+        setItems(items) {
+            this.items = items;
+            this.innerContainer.style.height = `${items.length * this.itemHeight}px`;
+            this.render();
+        }
+    
+        render() {
+            const containerHeight = this.container.clientHeight;
+            const scrollTop = this.container.scrollTop;
+            const startIndex = Math.floor(scrollTop / this.itemHeight);
+            const endIndex = Math.min(
+                startIndex + Math.ceil(containerHeight / this.itemHeight) + 1,
+                this.items.length
             );
-            if (songs[currentSongIndex] === song) {
-                div.classList.add('active');
+    
+            const newVisibleItems = new Set();
+            for (let i = startIndex; i < endIndex; i++) {
+                newVisibleItems.add(i);
             }
-            fragment.appendChild(div);
-        });
-
-        requestAnimationFrame(() => {
-            elements.playlist.innerHTML = '';
-            elements.playlist.appendChild(fragment);
-        });
+    
+            // Remove items that are no longer visible
+            for (const index of this.visibleItems) {
+                if (!newVisibleItems.has(index)) {
+                    const element = this.cachedItems.get(index);
+                    if (element) {
+                        element.remove();
+                        this.cachedItems.delete(index);
+                    }
+                }
+            }
+    
+            // Add new visible items
+            for (const index of newVisibleItems) {
+                if (!this.visibleItems.has(index)) {
+                    const item = this.items[index];
+                    const element = this.renderItem(item, index);
+                    element.style.position = 'absolute';
+                    element.style.top = `${index * this.itemHeight}px`;
+                    element.style.width = '100%';
+                    this.innerContainer.appendChild(element);
+                    this.cachedItems.set(index, element);
+                }
+            }
+    
+            this.visibleItems = newVisibleItems;
+        }
+    
+        onScroll() {
+            window.requestAnimationFrame(() => this.render());
+        }
+    
+        cleanup() {
+            this.resizeObserver.disconnect();
+            this.cachedItems.clear();
+            this.visibleItems.clear();
+        }
+    }
+    
+    // Modify updatePlaylistView to use VirtualScroller
+    let playlistScroller;
+    
+    function updatePlaylistView(songList) {
+        if (!playlistScroller) {
+            playlistScroller = new VirtualScroller(
+                elements.playlist,
+                40, // height of each playlist item
+                (song, index) => createPlaylistItem(song, index, loadSong)
+            );
+        }
+        playlistScroller.setItems(songList);
     }
 
     elements.searchInput.addEventListener('input', (e) => {
@@ -2131,27 +2253,34 @@ class QueueManager {
 const queueManager = new QueueManager();
 
 function playNext() {
-    if (!visibleSongs || !visibleSongs.length) return;
+    if (!songs.length) return;
     
-    if (queueManager.queue.length > 0) {
-        const nextSong = queueManager.getNext();
-        playSong(nextSong);
-        return;
-    }
-    
-    if (isShuffled) {
-        const currentVisibleIndex = visibleSongs.indexOf(songs[currentSongIndex]);
-        let nextIndex;
-        
-        do {
-            nextIndex = Math.floor(Math.random() * visibleSongs.length);
-        } while (nextIndex === currentVisibleIndex && visibleSongs.length > 1);
-        
+    if (queue.length > 0) {
+        const nextSong = queue.shift();
+        const nextIndex = songs.indexOf(nextSong);
         loadSong(nextIndex);
+        updateQueueView();
+    } else if (isShuffled) {
+        const currentShuffledIndex = shuffledSongs.indexOf(songs[currentSongIndex]);
+        if (currentShuffledIndex < shuffledSongs.length - 1) {
+            const nextSong = shuffledSongs[currentShuffledIndex + 1];
+            const nextIndex = songs.indexOf(nextSong);
+            loadSong(nextIndex);
+        } else if (loopState === 'all') {
+            // Re-shuffle when we reach the end, keeping current song first
+            const currentSong = songs[currentSongIndex];
+            const remainingSongs = songs.filter(song => song !== currentSong);
+            for (let i = remainingSongs.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [remainingSongs[i], remainingSongs[j]] = [remainingSongs[j], remainingSongs[i]];
+            }
+            shuffledSongs = [currentSong, ...remainingSongs];
+            loadSong(songs.indexOf(shuffledSongs[0]));
+        }
     } else {
-        const currentVisibleIndex = visibleSongs.indexOf(songs[currentSongIndex]);
-        if (currentVisibleIndex < visibleSongs.length - 1) {
-            loadSong(currentVisibleIndex + 1);
+        // Normal sequential playback
+        if (currentSongIndex < songs.length - 1) {
+            loadSong(currentSongIndex + 1);
         } else if (loopState === 'all') {
             loadSong(0);
         }
@@ -2386,3 +2515,136 @@ function playSong(song) {
             });
     }
 }
+
+const audioResourceManager = {
+    audioBuffers: new Map(),
+    maxBuffers: 5,
+
+    async loadAudio(file) {
+        if (this.audioBuffers.size >= this.maxBuffers) {
+            const oldestKey = this.audioBuffers.keys().next().value;
+            this.audioBuffers.delete(oldestKey);
+        }
+
+        try {
+            const buffer = await file.arrayBuffer();
+            this.audioBuffers.set(file.name, buffer);
+            return buffer;
+        } catch (error) {
+            console.error('Error loading audio:', error);
+            return null;
+        }
+    },
+
+    clearOldBuffers() {
+        if (this.audioBuffers.size > this.maxBuffers) {
+            const deleteCount = this.audioBuffers.size - this.maxBuffers;
+            let count = 0;
+            for (const key of this.audioBuffers.keys()) {
+                if (count >= deleteCount) break;
+                this.audioBuffers.delete(key);
+                count++;
+            }
+        }
+    }
+};
+
+// Add image optimization
+function optimizeImage(imageUrl, maxWidth = 300) {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            const scale = maxWidth / img.width;
+            canvas.width = maxWidth;
+            canvas.height = img.height * scale;
+            
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            resolve(canvas.toDataURL('image/jpeg', 0.8));
+        };
+        
+        img.onerror = () => resolve(null);
+        img.src = imageUrl;
+    });
+}
+
+// Add cleanup function for unused resources
+function cleanupUnusedResources() {
+    // Clear old audio buffers
+    audioResourceManager.clearOldBuffers();
+
+    // Clear old object URLs
+    if (elements.audioPlayer.src.startsWith('blob:')) {
+        URL.revokeObjectURL(elements.audioPlayer.src);
+    }
+
+    // Clear unused image cache
+    if (elements.coverArt.src.startsWith('blob:')) {
+        URL.revokeObjectURL(elements.coverArt.src);
+    }
+}
+
+// Add event listener for cleanup
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') {
+        cleanupUnusedResources();
+    }
+});
+
+window.addEventListener('pagehide', () => {
+    cleanupUnusedResources();
+});
+
+// Add cleanup to beforeunload for additional safety
+window.addEventListener('beforeunload', () => {
+    cleanupUnusedResources();
+});
+
+// Modify the cleanup function to be more thorough
+function cleanupUnusedResources() {
+    // Clear audio buffers
+    audioResourceManager.clearOldBuffers();
+    audioResourceManager.audioBuffers.clear();
+
+    // Clean up audio context
+    if (audioContext) {
+        audioContext.close().catch(console.error);
+    }
+
+    // Clean up audio elements
+    if (elements.audioPlayer) {
+        elements.audioPlayer.pause();
+        if (elements.audioPlayer.src) {
+            URL.revokeObjectURL(elements.audioPlayer.src);
+            elements.audioPlayer.src = '';
+            elements.audioPlayer.load();
+        }
+    }
+
+    // Clean up blob URLs
+    if (elements.coverArt && elements.coverArt.src.startsWith('blob:')) {
+        URL.revokeObjectURL(elements.coverArt.src);
+    }
+
+    // Clean up virtual scroller
+    if (playlistScroller) {
+        playlistScroller.cleanup();
+    }
+
+    // Save current state
+    try {
+        saveFavorites();
+        saveSettings();
+    } catch (error) {
+        console.error('Error saving state during cleanup:', error);
+    }
+}
+
+// Remove the old unload listener
+// window.addEventListener('unload', cleanupUnusedResources); <- Remove this line
+
+// ...rest of existing code...
