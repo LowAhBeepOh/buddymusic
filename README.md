@@ -2,7 +2,26 @@
 An offline music from the Buddy project / ecosystem
 
 # Newest Update (Ver. 0.XB > 0.XC)
-Update coming soon
+## 🔥 Major Features
+- new theme (inspired by the wii as i remember it), and better colors in adaptive theme (kinda idk)
+
+- improved PWA stuff - works fine as an app now! (windows and chromebook tested)
+
+- quicker song loading
+
+- that little media player widget can now do previous song and next song stuff
+![image](https://github.com/user-attachments/assets/ae513d2a-24be-4a58-9622-7cfeed4af28a)
+
+## 🔧 Minor Changes
+- updated placeholder texts and UI labels.
+- removed unnecessary things (and stuff which didn't work out)
+- no more blank cover arts!
+          no song played will show gray buddy
+          playing a song without a cover art will no blue buddy
+
+## 💻 Code Changes
+- modified index.html to include new metadata, manifest, and icons.
+- tried to optimize ram usage (good luck chromebook users)
 
 ## How to use
 To setup this webapp, you go into the website. (or open the index.html file if you downlaoded the code)
