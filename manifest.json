@@ -5,7 +5,7 @@
   "version": "0.XC",
   "icons": [
     {
-      "src": "data/assets/buddyMusicIconFULL.svg",
+      "src": "data/assets/buddyicon.music.svg",
       "sizes": "any",
       "type": "image/svg+xml"
     }
