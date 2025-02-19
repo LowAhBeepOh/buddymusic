@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Buddy Music - ver 0.XB</title>
+    <meta name="description" content="Offline Music Player by Buddy and LoaBeepo">
+    <meta name="application-name" content="Buddy Music">
+    <meta name="application-version" content="0.XC">
+    <title>Buddy Music - ver 0.XC</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,0" >
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js"></script>
@@ -11,6 +14,10 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
     <link href="https://fonts.cdnfonts.com/css/opendyslexic" rel="stylesheet">
+    <meta name="theme-color" content="#5A3D63">
+    <link rel="manifest" href="manifest.json">
+    <link rel="shortcut icon" href="data/assets/buddyicon.music.svg" type="image/x-icon">
+    <link rel="icon" type="image/x-icon" href="data/assets/buddyicon.music.svg">
 </head>
 <body>
     <div class="container">
@@ -43,9 +50,9 @@
             </div>
 
             <div class="playlist-tabs">
-                <button class="tab-btn active" data-tab="main">Main Playlist</button>
+                <button class="tab-btn active" data-tab="main">All Songs</button>
                 <button class="tab-btn" data-tab="queue">Queue</button>
-                <button class="tab-btn" data-tab="recent">Recently Played</button>
+                <button class="tab-btn" data-tab="recent">History</button>
             </div>
 
             <input type="file" id="file-input" accept="audio/*" multiple>
@@ -58,7 +65,7 @@
             <div class="now-playing">
                 <div class="album-art-wrapper">
                     <div class="album-art">
-                        <img id="cover-art" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=" alt="Album art">
+                        <img id="cover-art" src="./data/images/albumCoverStart.png" alt="Album art">
                     </div>
                 </div>
                 <div class="song-metadata">
@@ -106,6 +113,8 @@
                         <option value="ocean">Ocean Blue</option>
                         <option value="fluid">Fluid</option>
                         <option value="sunset">Sunset</option>
+                        <option value="">- SPECIAL -</option>
+                        <option value="silver">Silver</option>
                     </select>
                 </div>
                 <div class="setting-item">
@@ -128,24 +137,8 @@
             <section class="settings-section">
                 <h4>Accessibility</h4>
                 <div class="setting-item">
-                    <label for="high-contrast">High Contrast</label>
-                    <input type="checkbox" id="high-contrast">
-                </div>
-                <div class="setting-item">
                     <label for="reduce-animations">Reduce Animations</label>
                     <input type="checkbox" id="reduce-animations">
-                </div>
-            </section>
-
-            <section class="settings-section">
-                <h4>Playback</h4>
-                <div class="setting-item">
-                    <label for="default-volume">Default Volume</label>
-                    <input type="range" id="default-volume" min="0" max="100" value="100">
-                </div>
-                <div class="setting-item">
-                    <label for="autoplay">Autoplay</label>
-                    <input type="checkbox" id="autoplay">
                 </div>
             </section>
 

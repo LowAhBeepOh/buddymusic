@@ -64,12 +64,13 @@
     --bg-secondary: var(--adaptive-secondary, #2a2a3a);
     --bg-tertiary: var(--adaptive-tertiary, #35354a);
     --text-primary: var(--adaptive-text-primary, #ffffff);
-    --text-secondary: var(--adaptive-text-secondary, rgba(255, 255, 255, 0.85));
-    --accent-color: var(--adaptive-accent, #ffffff);
+    --text-secondary: rgba(255, 255, 255, 0.95);
+    --accent-color: var(--adaptive-accent, #FFFFFF);
     --hover-color: var(--adaptive-hover, rgba(255, 255, 255, 0.12));
     --scrollbar-bg: rgba(255, 255, 255, 0.1);
     --scrollbar-thumb: rgba(255, 255, 255, 0.3);
     --scrollbar-thumb-hover: rgba(255, 255, 255, 0.5);
+    --button-text: #ffffff;
     transition: 
         --bg-primary 0.6s cubic-bezier(0.4, 0, 0.2, 1),
         --bg-secondary 0.6s cubic-bezier(0.4, 0, 0.2, 1),
@@ -81,6 +82,40 @@
         background-color 0.6s cubic-bezier(0.4, 0, 0.2, 1),
         color 0.6s cubic-bezier(0.4, 0, 0.2, 1),
         border-color 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+:root[data-theme="silver"] {
+    --bg-primary: #f6f6f6;
+    --bg-secondary: #ffffff;
+    --bg-tertiary: #e8e8e8;
+    --text-primary: #323232;
+    --text-secondary: #555555;
+    --accent-color: #009cff;
+    --hover-color: #e6f4ff;
+    --button-bg: #ffffff;
+    --button-border: #d8d8d8;
+    --button-shadow: rgba(0, 0, 0, 0.08);
+    --channel-gradient: linear-gradient(102deg, 
+        #ffffff 0%,
+        #ffffff 12%,
+        #e8e8e8 12%,
+        #e8e8e8 24%,
+        #ffffff 24%,
+        #ffffff 36%,
+        #e8e8e8 36%,
+        #e8e8e8 48%,
+        #ffffff 48%,
+        #ffffff 60%,
+        #e8e8e8 60%,
+        #e8e8e8 72%,
+        #ffffff 72%,
+        #ffffff 84%,
+        #e8e8e8 84%,
+        #e8e8e8 100%
+    );
+    --highlight-shadow: 0 2px 8px rgba(0, 156, 255, 0.25);
+    --button-highlight: #f0f0f0;
+    --player-text: #323232;
 }
 
 :root {
@@ -409,11 +444,6 @@ select:focus {
 
 .material-symbols-rounded {
     font-size: 28px;
-    font-variation-settings:
-        'FILL' 1,
-        'wght' 400,
-        'GRAD' 0,
-        'opsz' 24;
 }
 
 .icon-btn.add-icon .material-symbols-rounded {
@@ -532,6 +562,12 @@ select:focus {
     100% { transform: translateX(-100%); }
 }
 
+@keyframes weightPulse {
+    0% { font-variation-settings: 'wght' 400; }
+    30% { font-variation-settings: 'wght' 750; }
+    100% { font-variation-settings: 'wght' 600; }
+}
+
 .theme-selector {
     width: 100%;
 }
@@ -627,6 +663,7 @@ select:focus {
     color: var(--text-primary);
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    animation: weightPulse 1s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
 .sidebar-header {
@@ -826,6 +863,7 @@ select:focus {
     background: var(--accent-color);
     color: #000;
     border: none;
+    animation: weightPulse 1s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
 [data-theme="fluid"] .settings-panel {
@@ -880,6 +918,7 @@ select:focus {
     background: var(--accent-color);
     color: #000;
     border: none;
+    animation: weightPulse 1s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
 [data-theme="fluid"] .settings-panel {
@@ -922,18 +961,19 @@ select:focus {
         box-shadow 0.5s ease-in-out;
 }
 
-@keyframes weightPulse {
-    0% { font-variation-settings: 'wght' 400; }
-    30% { font-variation-settings: 'wght' 750; }
-    100% { font-variation-settings: 'wght' 600; }
+[data-theme="adaptive"] .tab-btn.active {
+    background-color: #ffffff;
+    color: #000000 !important; /* Force black text color */
+    text-shadow: none;
+    font-weight: 600;
+    border: 1px solid var(--accent-color);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    animation: weightPulse 1s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
-[data-theme="adaptive"] .tab-btn.active {
-    background-color: var(--accent-color);
-    color: rgba(0, 0, 0, 0.9);
-    font-weight: 700;
-    animation: weightPulse 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-    font-variation-settings: 'wght' 600;
+[data-theme="adaptive"] .tab-btn:hover:not(.active) {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--button-text);
 }
 
 [data-theme="adaptive"] {
@@ -954,6 +994,80 @@ select:focus {
     transition: 
         background-color 0.1s ease,
         color 0.1s ease;
+}
+
+[data-theme="adaptive"] button {
+    color: var(--button-text) !important;
+}
+
+[data-theme="adaptive"] .playlist-item .song-artist,
+[data-theme="adaptive"] .playlist-item .song-separator {
+    color: var(--text-secondary);
+    opacity: 0.95;
+}
+
+[data-theme="adaptive"] .material-symbols-rounded {
+    color: var(--button-text);
+}
+
+[data-theme="adaptive"] .controls button {
+    color: var(--button-text) !important;
+}
+
+[data-theme="adaptive"] .song-metadata p {
+    color: var(--text-secondary);
+    opacity: 0.95;
+}
+
+[data-theme="adaptive"] .playlist-item .song-title,
+[data-theme="adaptive"] .playlist-item .song-artist,
+[data-theme="adaptive"] .playlist-item .song-separator {
+    color: var(--text-primary);
+    opacity: 1;
+}
+
+[data-theme="adaptive"] .tab-btn {
+    color: var(--button-text);
+    background-color: var(--bg-tertiary);
+    opacity: 0.9;
+}
+
+[data-theme="adaptive"] .tab-btn:hover:not(.active) {
+    background-color: var(--hover-color);
+    color: var(--button-text);
+}
+
+[data-theme="adaptive"] .tab-btn.active {
+    background-color: #ffffff;
+    color: #000000;
+    text-shadow: none;
+    font-weight: 600;
+    border: 1px solid var(--accent-color);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    animation: weightPulse 1s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+[data-theme="adaptive"] .playlist-item {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+[data-theme="adaptive"] .playlist-item:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="adaptive"] .playlist-item.active {
+    background-color: var(--hover-color);
+    border-left-color: var(--accent-color);
+}
+
+[data-theme="adaptive"] .remove-queue-btn {
+    color: var(--button-text);
+    opacity: 0.7;
+}
+
+[data-theme="adaptive"] .remove-queue-btn:hover {
+    color: var(--accent-color);
+    opacity: 1;
 }
 
 .queue-list {
@@ -1100,4 +1214,319 @@ select:focus {
     opacity: 0.5;
     cursor: default;
     background-color: var(--bg-secondary);
+}
+
+[data-theme="silver"] .sidebar {
+    background: var(--bg-secondary);
+    border-right: 1px solid var(--button-border);
+    box-shadow: 2px 0 15px var(--button-shadow);
+}
+
+[data-theme="silver"] .playlist-item {
+    background: var(--bg-secondary);
+    border: 1px solid var(--button-border);
+    border-radius: 28px;
+    margin-bottom: 8px;
+    box-shadow: 0 2px 4px var(--button-shadow);
+    color: var(--text-primary);
+    padding: 12px 20px;
+}
+
+[data-theme="silver"] .playlist-item:hover {
+    border-color: var(--accent-color);
+    transform: translateY(-1px);
+    background: var(--hover-color);
+    box-shadow: var(--highlight-shadow);
+}
+
+[data-theme="silver"] .playlist-item.active {
+    background: var(--channel-gradient);
+    color: var(--text-primary);
+    border: 1px solid var(--accent-color);
+    box-shadow: var(--highlight-shadow);
+}
+
+[data-theme="silver"] .playlist-item.active .song-artist,
+[data-theme="silver"] .playlist-item.active .song-separator {
+    color: var(--text-primary);
+}
+
+[data-theme="silver"] .controls button {
+    background: var(--button-highlight);
+    border: 1px solid var(--button-border);
+    box-shadow: 0 2px 4px var(--button-shadow);
+    width: 45px;
+    height: 45px;
+    color: var(--text-primary);
+}
+
+[data-theme="silver"] .controls button:hover {
+    background: var(--hover-color);
+    border-color: var(--accent-color);
+    transform: translateY(-1px);
+    box-shadow: var(--highlight-shadow);
+    color: var(--accent-color);
+}
+
+[data-theme="silver"] .tab-btn {
+    background: var(--button-highlight);
+    border: 1px solid var(--button-border);
+    box-shadow: 0 2px 4px var(--button-shadow);
+    color: var(--text-primary);
+    font-weight: 600;
+    border-radius: 24px;
+    padding: 10px 20px;
+}
+
+[data-theme="silver"] .tab-btn:hover {
+    background: var(--hover-color);
+    border-color: var(--accent-color);
+    transform: translateY(-1px);
+    box-shadow: var(--highlight-shadow);
+}
+
+[data-theme="silver"] .tab-btn.active {
+    background: var(--channel-gradient);
+    color: var(--text-primary);
+    border: 1px solid var(--accent-color);
+    box-shadow: var(--highlight-shadow);
+    font-weight: 600;
+    transform: rotate(-8deg) translateY(-4px);
+    transform-origin: center;
+    position: relative;
+    z-index: 2;
+    animation: weightPulse 1s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+[data-theme="silver"] .tab-btn:not(.active) {
+    transform: rotate(0deg);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+[data-theme="silver"] input[type="range"] {
+    height: 8px;
+    border-radius: 4px;
+    background: var(--button-border);
+}
+
+[data-theme="silver"] input[type="range"]::-webkit-slider-thumb {
+    width: 20px;
+    height: 20px;
+    background: var(--accent-color);
+    border: 2px solid white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="silver"] select,
+[data-theme="silver"] input[type="text"] {
+    background: white;
+    border: 1px solid var(--button-border);
+    box-shadow: 0 2px 4px var(--button-shadow);
+    border-radius: 24px;
+    padding: 10px 20px;
+    color: var(--text-primary);
+}
+
+[data-theme="silver"] select:hover,
+[data-theme="silver"] input[type="text"]:hover {
+    border-color: var(--accent-color);
+    box-shadow: var(--highlight-shadow);
+}
+
+[data-theme="silver"] .album-art-wrapper {
+    border: 4px solid white;
+    box-shadow: var(--highlight-shadow);
+    border-radius: 16px;
+}
+
+[data-theme="silver"] .settings-panel {
+    background: var(--bg-secondary);
+    border-left: 1px solid var(--button-border);
+    box-shadow: -2px 0 15px var(--button-shadow);
+}
+
+[data-theme="silver"] .setting-item {
+    background: var(--bg-tertiary);
+    border-radius: 24px;
+    border: 1px solid var(--button-border);
+    padding: 15px 20px;
+}
+
+[data-theme="silver"] .material-symbols-rounded {
+    font-variation-settings: 'FILL' 1;
+    color: var(--text-primary);
+}
+
+[data-theme="silver"] .controls button:hover .material-symbols-rounded {
+    color: var(--accent-color);
+}
+
+[data-theme="silver"] .icon-btn {
+    color: var(--text-primary);
+}
+
+[data-theme="silver"] .icon-btn:hover {
+    color: var(--accent-color);
+    background: var(--hover-color);
+}
+
+[data-theme="silver"] .now-playing {
+    color: var(--player-text);
+}
+
+[data-theme="silver"] .song-metadata p,
+[data-theme="silver"] .song-metadata h3,
+[data-theme="silver"] .song-info span {
+    color: var(--player-text);
+}
+
+[data-theme="silver"] .volume-icon {
+    color: var(--text-primary);
+}
+
+[data-theme="silver"] .controls button .material-symbols-rounded {
+    color: var(--text-primary);
+}
+
+[data-reduce-animations="true"] {
+    --transition-duration: 0s !important;
+    --animation-duration: 0s !important;
+}
+
+[data-reduce-animations="true"] *,
+[data-reduce-animations="true"] *::before,
+[data-reduce-animations="true"] *::after {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+    transition-duration: 0s !important;
+    transition-delay: 0s !important;
+    scroll-behavior: auto !important;
+}
+
+[data-reduce-animations="true"] .playlist-item:hover {
+    transform: none !important;
+}
+
+[data-reduce-animations="true"] .tab-btn:hover {
+    transform: none !important;
+}
+
+[data-reduce-animations="true"] .album-art-wrapper,
+[data-reduce-animations="true"] .album-art-wrapper::before,
+[data-reduce-animations="true"] .album-art {
+    transition: none !important;
+}
+
+[data-reduce-animations="true"] .song-metadata h3.scroll {
+    animation: none !important;
+    text-overflow: ellipsis;
+}
+
+.folder-progress {
+    margin: 10px;
+    padding: 15px;
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    border: 1px solid var(--bg-tertiary);
+    transition: background 0.3s ease;
+}
+
+[data-theme="adaptive"] .folder-progress {
+    background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.progress-text {
+    margin-bottom: 12px;
+    color: var(--text-secondary);
+    font-size: 0.9em;
+    transition: color 0.3s ease;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 6px;
+    background: var(--bg-tertiary);
+    border-radius: 3px;
+    overflow: hidden;
+    position: relative;
+}
+
+[data-theme="adaptive"] .progress-bar {
+    background: var(--overlay-strong);
+}
+
+.progress-fill {
+    height: 100%;
+    width: 0;
+    background: var(--accent-color);
+    border-radius: 3px;
+    transition: width 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+[data-theme="adaptive"] .progress-fill {
+    background: var(--accent-color);
+    box-shadow: 0 0 10px var(--accent-color);
+}
+
+[data-reduce-animations="true"] .progress-fill {
+    transition: none;
+}
+
+#shuffle-btn:active, #loop-btn:active {
+    background: none !important;
+    border: none !important;
+    color: #ff0000 !important;
+    transition: none !important;
+}
+
+button#shuffle-btn:active,
+button#loop-btn:active {
+    background: none !important;
+    border: none !important;
+    color: #ff0000 !important;
+    transform: none !important;
+}
+
+[data-theme] button#shuffle-btn:active,
+[data-theme] button#loop-btn:active {
+    background: none !important;
+    border: none !important;
+    color: #ff0000 !important;
+}
+
+/* Add these specific styles */
+button#shuffle-btn .material-symbols-rounded,
+button#loop-btn .material-symbols-rounded {
+    transition: color 0.2s ease;
+}
+
+[data-theme] button#shuffle-btn.active .material-symbols-rounded,
+[data-theme] button#loop-btn.active .material-symbols-rounded {
+    color: #1DB954 !important;
+}
+
+/* Add these specific styles near other button styles */
+#shuffle-btn.active,
+#loop-btn.active {
+    color: #1DB954 !important;
+}
+
+[data-theme="silver"] #shuffle-btn.active,
+[data-theme="silver"] #loop-btn.active,
+[data-theme="adaptive"] #shuffle-btn.active,
+[data-theme="adaptive"] #loop-btn.active {
+    color: #1DB954 !important;
+    background: rgba(0, 0, 0, 0.2) !important;
+}
+
+[data-theme="silver"] #shuffle-btn.active:hover,
+[data-theme="silver"] #loop-btn.active:hover,
+[data-theme="adaptive"] #shuffle-btn.active:hover,
+[data-theme="adaptive"] #loop-btn.active:hover {
+    background: rgba(0, 0, 0, 0.3) !important;
 }
