@@ -1,15 +1,17 @@
 {
   "name": "Buddy Music",
   "short_name": "Buddy Music",
-  "start_url": "./index.html",
-  "display": "standalone",
-  "background_color": "#121212",
-  "theme_color": "#1db954",
+  "description": "Offline Music Player by Buddy and LoaBeepo",
+  "version": "0.XC",
   "icons": [
     {
-      "src": "data/assets/buddyMusicIconFULL.png",
-      "sizes": "512x512",
-      "type": "image/png"
+      "src": "data/assets/buddyMusicIconFULL.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
     }
-  ]
+  ],
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#000000",
+  "background_color": "#ffffff"
 }
