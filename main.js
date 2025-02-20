@@ -2643,8 +2643,3 @@ function cleanupUnusedResources() {
         console.error('Error saving state during cleanup:', error);
     }
 }
-
-// Remove the old unload listener
-// window.addEventListener('unload', cleanupUnusedResources); <- Remove this line
-
-// ...rest of existing code...
