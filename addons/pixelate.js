@@ -1,6 +1,6 @@
 // Parameter definitions
-const PIXELATE_STD_DEVIATION = 4; // Adjust this value for stronger/weaker blur
-const PIXELATE_TABLE_VALUES = "0 0.33 0.66 1"; // Adjust these values for different quantization levels
+const PIXELATE_STD_DEVIATION = 0; // Adjust this value for stronger/weaker blur
+const PIXELATE_TABLE_VALUES = "0 0.25 0.5 1"; // Adjust these values for different quantization levels
 
 (function() {
     const svgNS = "http://www.w3.org/2000/svg";
