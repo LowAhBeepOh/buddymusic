@@ -2171,6 +2171,61 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     elements.clearEverythingBtn?.addEventListener('click', clearEverything);
+
+    function cleanupUnusedResources() {
+        // Clear audio buffers if they exist
+        if (typeof audioResourceManager !== 'undefined') {
+            audioResourceManager.clearOldBuffers();
+            audioResourceManager.audioBuffers.clear();
+        }
+
+        // Clean up audio context if it exists and isn't already closed
+        if (typeof audioContext !== 'undefined' && audioContext && audioContext.state !== 'closed') {
+            try {
+                audioContext.close().catch(console.error);
+            } catch (error) {
+                console.warn('Error closing AudioContext:', error);
+            }
+        }
+
+        // Clean up audio elements if they exist
+        if (elements?.audioPlayer) {
+            elements.audioPlayer.pause();
+            if (elements.audioPlayer.src) {
+                URL.revokeObjectURL(elements.audioPlayer.src);
+                elements.audioPlayer.src = '';
+                elements.audioPlayer.load();
+            }
+        }
+
+        // Clean up blob URLs if coverArt exists
+        if (elements?.coverArt?.src?.startsWith('blob:')) {
+            URL.revokeObjectURL(elements.coverArt.src);
+        }
+
+        // Clean up virtual scroller if it exists
+        if (typeof playlistScroller !== 'undefined' && playlistScroller) {
+            playlistScroller.cleanup();
+        }
+
+        // Save current state if functions exist
+        try {
+            if (typeof saveFavorites === 'function') saveFavorites();
+            if (typeof saveSettings === 'function') saveSettings();
+        } catch (error) {
+            console.error('Error saving state during cleanup:', error);
+        }
+    }
+
+    // Add event listeners for cleanup
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') {
+            cleanupUnusedResources();
+        }
+    });
+
+    window.addEventListener('pagehide', cleanupUnusedResources);
+    window.addEventListener('beforeunload', cleanupUnusedResources);
 });
 
 class QueueManager {
@@ -2575,16 +2630,42 @@ function optimizeImage(imageUrl, maxWidth = 300) {
 // Add cleanup function for unused resources
 function cleanupUnusedResources() {
     // Clear old audio buffers
-    audioResourceManager.clearOldBuffers();
-
-    // Clear old object URLs
-    if (elements.audioPlayer.src.startsWith('blob:')) {
-        URL.revokeObjectURL(elements.audioPlayer.src);
+    if (audioResourceManager) {
+        audioResourceManager.clearOldBuffers();
+        audioResourceManager.audioBuffers.clear();
     }
 
-    // Clear unused image cache
-    if (elements.coverArt.src.startsWith('blob:')) {
+    // Clean up audio context only if it exists
+    if (typeof audioContext !== 'undefined' && audioContext) {
+        audioContext.close().catch(console.error);
+    }
+
+    // Clean up audio elements
+    if (elements?.audioPlayer) {
+        elements.audioPlayer.pause();
+        if (elements.audioPlayer.src) {
+            URL.revokeObjectURL(elements.audioPlayer.src);
+            elements.audioPlayer.src = '';
+            elements.audioPlayer.load();
+        }
+    }
+
+    // Clean up blob URLs
+    if (elements?.coverArt && elements.coverArt.src.startsWith('blob:')) {
         URL.revokeObjectURL(elements.coverArt.src);
+    }
+
+    // Clean up virtual scroller
+    if (typeof playlistScroller !== 'undefined' && playlistScroller) {
+        playlistScroller.cleanup();
+    }
+
+    // Save current state
+    try {
+        if (typeof saveFavorites === 'function') saveFavorites();
+        if (typeof saveSettings === 'function') saveSettings();
+    } catch (error) {
+        console.error('Error saving state during cleanup:', error);
     }
 }
 
@@ -2596,6 +2677,11 @@ document.addEventListener('visibilitychange', () => {
 });
 
 window.addEventListener('pagehide', () => {
+    cleanupUnusedResources();
+});
+
+// Add cleanup to beforeunload for additional safety
+window.addEventListener('beforeunload', () => {
     cleanupUnusedResources();
 });
 

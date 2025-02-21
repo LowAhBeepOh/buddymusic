@@ -186,19 +186,7 @@
             }
         });
     </script>
-    <script>
-        fetch('addons/addons.json')
-            .then(response => response.json())
-            .then(addons => {
-                addons.forEach(fileName => {
-                    const script = document.createElement('script');
-                    script.src = 'addons/' + fileName;
-                    script.defer = true;
-                    document.body.appendChild(script);
-                });
-            })
-            .catch(error => console.error('Failed to load addons:', error));
-    </script>
+    <script src="addons/pixelate.js" defer></script>
     <script src="main.js" defer></script>
 </body>
 </html>

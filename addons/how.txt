@@ -1,1 +1,1 @@
-To add an addon, add the javascript file into the addons folder, and inside of addons.json, write that filename in.
+To add an addon, add the javascript file into the "addons" folder, and inside of index.html, add that as a script. (I don't know how to make it automatic sorry)
