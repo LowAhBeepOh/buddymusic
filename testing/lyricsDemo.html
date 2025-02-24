@@ -1,0 +1,200 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>lyrics demo file input</title>
+    <style>
+      body {
+        background: linear-gradient(135deg, #1a1a2e, #16213e);
+        color: #eee;
+        font-family: arial, sans-serif;
+        text-align: center;
+        margin: 0;
+        padding: 20px;
+      }
+      h1 {
+        margin: 20px 0;
+        animation: fadeIn 1s ease-in-out;
+      }
+      .lyrics {
+        max-width: 600px;
+        margin: 20px auto;
+        text-align: left;
+        background: rgba(255, 255, 255, 0.05);
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        position: relative;
+        overflow: hidden;
+      }
+      /* highlight bar that smoothly moves */
+      #highlight {
+        position: absolute;
+        left: 0;
+        width: 100%;
+        background: rgba(255, 102, 153, 0.2);
+        border-radius: 4px;
+        transition: top 0.3s ease, height 0.3s ease;
+        z-index: 0;
+        pointer-events: none;
+      }
+      .line {
+        padding: 6px 8px;
+        opacity: 0.8;
+        transition: all 0.3s ease;
+        animation: lineFadeIn 0.5s ease forwards;
+        position: relative;
+        z-index: 1;
+        cursor: pointer;
+      }
+      .line:hover {
+        opacity: 1;
+      }
+      input[type="file"] {
+        margin: 20px;
+        padding: 10px 15px;
+        background: #16213e;
+        color: #eee;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background 0.3s ease;
+      }
+      input[type="file"]:hover {
+        background: #1a1a2e;
+      }
+      audio {
+        margin: 20px auto;
+        display: block;
+        width: 90%;
+        max-width: 600px;
+        border: 2px solid rgba(255, 255, 255, 0.2);
+        border-radius: 4px;
+      }
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-20px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      @keyframes lineFadeIn {
+        from { opacity: 0; transform: translateX(-10px); }
+        to { opacity: 0.8; transform: translateX(0); }
+      }
+    </style>
+  </head>
+  <body>
+    <h1>lyrics demo</h1>
+    <p>uses USLT data inside of the ID3 metadata in your audio file, make sure that the song has that inside of it, AND uses the LRC format.</p>
+    <input type="file" id="file-input" accept="audio/*">
+    <br>
+    <audio id="audio" controls></audio>
+    <div class="lyrics" id="lyrics">
+      <!-- gyatt gyatt -->
+      <div id="highlight"></div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js"></script>
+    <script>
+      // parse lrc formatted text and extract timed lines.
+      function parseLyrics(text) {
+        const regex = /\[(\d{2}):(\d{2}(?:\.\d{2})?)\]([^\[]+)/g;
+        const lines = [];
+        let match;
+        while ((match = regex.exec(text)) !== null) {
+          const minutes = parseInt(match[1], 10);
+          const seconds = parseFloat(match[2]);
+          const time = minutes * 60 + seconds;
+          const lyric = match[3].trim();
+          lines.push({ time, text: lyric });
+        }
+        lines.sort((a, b) => a.time - b.time);
+        return lines;
+      }
+
+      // display the lyric lines on the page.
+      function displayLyrics(lines) {
+        const container = document.getElementById("lyrics");
+        // remove previous lyric lines (but keep the highlight bar)
+        container.querySelectorAll(".line").forEach(el => el.remove());
+        lines.forEach((line, index) => {
+          const div = document.createElement("div");
+          div.classList.add("line");
+          div.id = "line-" + index;
+          div.textContent = line.text;
+          // add click event so the user can skip to this lyric.
+          div.addEventListener("click", () => {
+            const audio = document.getElementById("audio");
+            audio.currentTime = line.time;
+          });
+          container.appendChild(div);
+        });
+      }
+
+      let lyricsLines = [];
+
+      document.getElementById("file-input").addEventListener("change", function(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        // set the audio source to the selected file.
+        const audio = document.getElementById("audio");
+        audio.src = URL.createObjectURL(file);
+
+        // read id3v2 tags from the file.
+        jsmediatags.read(file, {
+          onSuccess: function(tag) {
+            console.log("tag data:", tag);
+            let lyricsText = null;
+
+            // check for unsynchronized lyrics in a few possible ways.
+            if (tag.tags.USLT && tag.tags.USLT.data && tag.tags.USLT.data.lyrics) {
+              lyricsText = tag.tags.USLT.data.lyrics;
+            } else if (tag.tags.unsynchronisedLyrics) {
+              if (typeof tag.tags.unsynchronisedLyrics === 'object' && tag.tags.unsynchronisedLyrics.text) {
+                lyricsText = tag.tags.unsynchronisedLyrics.text;
+              } else {
+                lyricsText = tag.tags.unsynchronisedLyrics;
+              }
+            }
+
+            if (lyricsText) {
+              lyricsLines = parseLyrics(lyricsText);
+              displayLyrics(lyricsLines);
+            } else {
+              document.getElementById("lyrics").textContent = "no lyrics found in file.";
+            }
+          },
+          onError: function(error) {
+            console.log("error reading tags:", error);
+            document.getElementById("lyrics").textContent = "error reading metadata.";
+          }
+        });
+      });
+
+      // update the highlight bar as the song plays.
+      document.getElementById("audio").addEventListener("timeupdate", function() {
+        const currentTime = this.currentTime;
+        for (let i = 0; i < lyricsLines.length; i++) {
+          const line = lyricsLines[i];
+          const nextLine = lyricsLines[i + 1];
+          // shift timing 800ms earlier.
+          const lineStart = Math.max(line.time - 0.8, 0);
+          const nextLineStart = nextLine ? Math.max(nextLine.time - 0.8, 0) : Infinity;
+          if (currentTime >= lineStart && currentTime < nextLineStart) {
+            const currentLineEl = document.getElementById("line-" + i);
+            if (currentLineEl) {
+              const container = document.getElementById("lyrics");
+              const containerRect = container.getBoundingClientRect();
+              const lineRect = currentLineEl.getBoundingClientRect();
+              const offset = lineRect.top - containerRect.top;
+              const height = lineRect.height;
+              const highlight = document.getElementById("highlight");
+              highlight.style.top = offset + "px";
+              highlight.style.height = height + "px";
+            }
+            break;
+          }
+        }
+      });
+    </script>
+  </body>
+</html>
