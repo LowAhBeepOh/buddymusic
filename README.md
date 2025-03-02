@@ -16,8 +16,8 @@ An offline music from the Buddy project / ecosystem
 - updated placeholder texts and UI labels.
 - removed unnecessary things (and stuff which didn't work out)
 - no more blank cover arts!
-          no song played will show gray buddy
-          playing a song without a cover art will no blue buddy
+          no song played will show gray buddy (at the start),
+          and playing a song without a cover art will show blue buddy.
 
 ## 💻 Code Changes
 - modified index.html to include new metadata, manifest, and icons.
