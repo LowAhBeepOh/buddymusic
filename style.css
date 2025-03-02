@@ -1530,3 +1530,147 @@ button#loop-btn .material-symbols-rounded {
 [data-theme="adaptive"] #loop-btn.active:hover {
     background: rgba(0, 0, 0, 0.3) !important;
 }
+
+.queue-actions {
+    position: sticky;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    display: flex;
+    gap: 12px;
+    padding: 12px;
+    background-color: var(--bg-tertiary);
+    z-index: 2;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
+    border-radius: 12px;
+}
+
+.queue-action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 0; /* Remove padding to control height precisely */
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    border-radius: 8px;
+    height: 42px; /* Set fixed height to match burger menu */
+}
+
+.queue-action-btn.queue-all {
+    flex: 1;
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+.queue-action-btn.burger-menu {
+    flex: 0 0 42px;
+    width: 42px;
+    padding: 0;
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+.burger-dropdown {
+    position: absolute;
+    bottom: 100%;
+    right: 0;
+    margin-bottom: 8px;
+    background-color: var(--bg-secondary);
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    min-width: 200px;
+    display: none;
+    z-index: 3;
+    border: 1px solid var(--bg-tertiary);
+}
+
+.queue-action-btn.burger-menu {
+    flex: 0 0 auto;
+    width: 42px;
+    height: 42px;
+    padding: 0;
+}
+
+.burger-dropdown {
+    position: absolute;
+    bottom: 100%;
+    right: 0;
+    margin-bottom: 8px;
+    background-color: var(--bg-secondary);
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    min-width: 200px;
+    display: none;
+    z-index: 3;
+    border: 1px solid var(--bg-tertiary);
+}
+
+.burger-dropdown.active {
+    display: block;
+    animation: fadeIn 0.2s ease;
+}
+
+.burger-dropdown button {
+    width: 100%;
+    text-align: left;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border: none;
+    background: none;
+    color: var(--text-primary);
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.burger-dropdown button:hover {
+    background-color: var(--hover-color);
+}
+
+.burger-dropdown button.delete-action {
+    color: #ff4444;
+}
+
+.burger-dropdown button.delete-action:hover {
+    background-color: rgba(255, 68, 68, 0.1);
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.burger-dropdown {
+    position: absolute;
+    bottom: 100%;
+    right: 0;
+    margin-bottom: 8px;
+    background-color: var(--bg-primary);
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    min-width: 200px;
+    display: none;
+    z-index: 3;
+    border: 1px solid var(--bg-tertiary);
+}
+
+.burger-dropdown button {
+    width: 100%;
+    text-align: left;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border: none;
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.burger-dropdown button:hover {
+    background-color: var(--bg-tertiary);
+}

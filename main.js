@@ -1678,46 +1678,134 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function showAddAllToQueue(filteredSongs) {
-        let addAllBtn = document.querySelector('.add-all-to-queue');
-        if (!addAllBtn) {
-            addAllBtn = document.createElement('button');
-            addAllBtn.className = 'add-all-to-queue';
-            addAllBtn.innerHTML = `
-                <span class="material-symbols-rounded">queue</span>
-                Add all to queue (${filteredSongs.length} songs)
-            `;
-            addAllBtn.addEventListener('click', () => {
-                const songsToAdd = tempSearchResults.filter(song => !queue.includes(song));
-                if (songsToAdd.length > 0) {
-                    queue.push(...songsToAdd);
-                    updateQueueView();
-                    
-                    switchTab('queue');
-                    
-                    addAllBtn.innerHTML = '<span class="material-symbols-rounded">check</span> Added to queue!';
-                    setTimeout(() => {
-                        addAllBtn.innerHTML = `
-                            <span class="material-symbols-rounded">queue</span>
-                            Add all to queue (${filteredSongs.length} songs)
-                        `;
-                    }, 1000);
-                }
-            });
-            elements.playlist.parentNode.appendChild(addAllBtn);
-        } else {
-            addAllBtn.innerHTML = `
-                <span class="material-symbols-rounded">queue</span>
-                Add all to queue (${filteredSongs.length} songs)
-            `;
+        let actionsContainer = document.querySelector('.queue-actions');
+        if (!actionsContainer) {
+            actionsContainer = document.createElement('div');
+            actionsContainer.className = 'queue-actions';
+            elements.playlist.parentNode.appendChild(actionsContainer);
         }
-        addAllBtn.style.display = 'flex';
+        
+        actionsContainer.innerHTML = `
+            <button class="queue-action-btn queue-all">
+                <span class="material-symbols-rounded">queue_music</span>
+                Add all to queue (${filteredSongs.length})
+            </button>
+            <div class="burger-container">
+                <button class="queue-action-btn burger-menu">
+                    <span class="material-symbols-rounded">more_vert</span>
+                </button>
+                <div class="burger-dropdown">
+                    <button class="favorite-all">
+                        <span class="material-symbols-rounded">favorite</span>
+                        Favorite all
+                    </button>
+                    <button class="save-all">
+                        <span class="material-symbols-rounded">save</span>
+                        Save locally
+                    </button>
+                    <button class="delete-action delete-all">
+                        <span class="material-symbols-rounded">delete</span>
+                        Delete all
+                    </button>
+                </div>
+            </div>
+        `;
+
+        // Add queue all handler
+        actionsContainer.querySelector('.queue-all').addEventListener('click', async () => {
+            const songsToAdd = tempSearchResults.filter(song => !queue.includes(song));
+            if (songsToAdd.length > 0) {
+                queue.push(...songsToAdd);
+                updateQueueView();
+                switchTab('queue');
+                showFeedback(actionsContainer.querySelector('.queue-all'), 'Added to queue!');
+            }
+        });
+
+        // Setup burger menu
+        const burgerMenu = actionsContainer.querySelector('.burger-menu');
+        const burgerDropdown = actionsContainer.querySelector('.burger-dropdown');
+        
+        burgerMenu.addEventListener('click', (e) => {
+            e.stopPropagation();
+            burgerDropdown.classList.toggle('active');
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!burgerMenu.contains(e.target)) {
+                burgerDropdown.classList.remove('active');
+            }
+        });
+
+        // Add favorite all handler
+        burgerDropdown.querySelector('.favorite-all').addEventListener('click', async () => {
+            let count = 0;
+            for (const song of tempSearchResults) {
+                const key = `${song.metadata.title}|||${song.metadata.artist}`;
+                if (!favorites.has(key)) {
+                    favorites.add(key);
+                    await favoritesDB.saveSong(song);
+                    count++;
+                }
+            }
+            saveFavorites();
+            showFeedback(burgerMenu, `${count} songs favorited!`);
+            burgerDropdown.classList.remove('active');
+            updatePlaylistView(songs);
+        });
+
+        // Add save all handler
+        burgerDropdown.querySelector('.save-all').addEventListener('click', async () => {
+            let count = 0;
+            for (const song of tempSearchResults) {
+                const isSaved = await checkIfSongIsSaved(song);
+                if (!isSaved) {
+                    await songsDB.saveSong(song);
+                    count++;
+                }
+            }
+            showFeedback(burgerMenu, `${count} songs saved!`);
+            burgerDropdown.classList.remove('active');
+        });
+
+        // Add delete all handler
+        burgerDropdown.querySelector('.delete-all').addEventListener('click', async () => {
+            if (confirm(`Are you sure you want to delete ${filteredSongs.length} songs?`)) {
+                for (const song of tempSearchResults) {
+                    const songId = `${song.metadata.title}|||${song.metadata.artist}`;
+                    await Promise.all([
+                        songsDB.deleteSong(songId),
+                        favoritesDB.deleteSong(songId)
+                    ]);
+                    favorites.delete(songId);
+                    const songIndex = songs.indexOf(song);
+                    if (songIndex > -1) {
+                        songs.splice(songIndex, 1);
+                    }
+                }
+                updatePlaylistView(songs);
+                showFeedback(burgerMenu, 'Songs deleted!');
+                burgerDropdown.classList.remove('active');
+            }
+        });
+        
+        actionsContainer.style.display = 'flex';
     }
 
     function hideAddAllToQueue() {
-        const addAllBtn = document.querySelector('.add-all-to-queue');
-        if (addAllBtn) {
-            addAllBtn.style.display = 'none';
+        const actionsContainer = document.querySelector('.queue-actions');
+        if (actionsContainer) {
+            actionsContainer.style.display = 'none';
         }
+    }
+
+    function showFeedback(button, message) {
+        const originalText = button.innerHTML;
+        button.innerHTML = `<span class="material-symbols-rounded">check</span>${message}`;
+        setTimeout(() => {
+            button.innerHTML = originalText;
+        }, 2000);
     }
 
     function songMatchesCurrentSearch(song) {
