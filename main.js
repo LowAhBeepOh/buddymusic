@@ -1284,6 +1284,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     elements.audioPlayer.addEventListener('timeupdate', () => {
         const progress = (elements.audioPlayer.currentTime / elements.audioPlayer.duration) * 100;
         elements.progressBar.value = progress;
+        updateRangeProgress(elements.progressBar);
         elements.currentTimeSpan.textContent = formatTime(elements.audioPlayer.currentTime);
     });
 
@@ -2306,6 +2307,33 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     window.addEventListener('pagehide', cleanup);
     window.addEventListener('beforeunload', cleanup);
+
+    function updateRangeProgress(rangeInput) {
+        const value = rangeInput.value;
+        const max = rangeInput.max;
+        const percentage = (value / max) * 100;
+        rangeInput.style.setProperty('--range-progress', `${percentage}%`);
+    }
+
+    // Add input event listeners for both range inputs
+    elements.progressBar.addEventListener('input', () => {
+        updateRangeProgress(elements.progressBar);
+    });
+
+    elements.volumeControl.addEventListener('input', () => {
+        updateRangeProgress(elements.volumeControl);
+    });
+
+    // Initialize progress for volume control
+    updateRangeProgress(elements.volumeControl);
+
+    // Update progress bar in the timeupdate event
+    elements.audioPlayer.addEventListener('timeupdate', () => {
+        const progress = (elements.audioPlayer.currentTime / elements.audioPlayer.duration) * 100;
+        elements.progressBar.value = progress;
+        updateRangeProgress(elements.progressBar);
+        elements.currentTimeSpan.textContent = formatTime(elements.audioPlayer.currentTime);
+    });
 });
 
 class QueueManager {
