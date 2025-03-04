@@ -1,0 +1,70 @@
+:root[data-theme="nature"] {
+    --bg-primary: #eef5ec;          /* More green tint */
+    --bg-secondary: #e3f0e0;        /* More green tint */
+    --bg-tertiary: #d5e8d1;         /* More green tint */
+    --text-primary: #1a331a;          /* Darkened from #2c4a2a */
+    --text-secondary: #2d422e;        /* Darkened from #4a694b */
+    --accent-color: #2d7c2a;          /* Darkened from #5c9f5a */
+    --hover-color: rgba(92, 159, 90, 0.15);
+    --button-bg: #ffffff;
+    --button-border: #c5dbc4;
+    --button-shadow: rgba(0, 0, 0, 0.08);
+    --channel-gradient: linear-gradient(102deg, 
+        #ffffff 0%,
+        #ffffff 12%,
+        #e8f3e6 12%,
+        #e8f3e6 24%,
+        #ffffff 24%,
+        #ffffff 36%,
+        #e8f3e6 36%,
+        #e8f3e6 48%,
+        #ffffff 48%,
+        #ffffff 60%,
+        #e8f3e6 60%,
+        #e8f3e6 72%,
+        #ffffff 72%,
+        #ffffff 84%,
+        #e8f3e6 84%,
+        #e8f3e6 100%
+    );
+    --highlight-shadow: 0 2px 8px rgba(92, 159, 90, 0.25);
+    --button-highlight: #f5f9f4;
+    --player-text: #1a331a;           /* Matched with text-primary */
+    --scrollbar-bg: rgba(92, 159, 90, 0.1);
+    --scrollbar-thumb: rgba(92, 159, 90, 0.3);
+    --scrollbar-thumb-hover: rgba(92, 159, 90, 0.5);
+
+    /* Add new contrast-specific variables */
+    --player-text-secondary: #2d422e;  /* For secondary text in player */
+    --button-text: #1a331a;            /* For button text */
+    --button-active: #2d7c2a;          /* For active buttons */
+    --button-active-text: #ffffff;      /* For text on active buttons */
+}
+
+[data-theme="nature"] .controls button {
+    color: var(--button-text);
+}
+
+[data-theme="nature"] .controls button.active {
+    color: var(--button-active);
+}
+
+[data-theme="nature"] .song-metadata p {
+    color: var(--player-text-secondary);
+}
+
+[data-theme="nature"] #current-song {
+    color: var(--player-text);
+    font-weight: 600;
+}
+
+[data-theme="nature"] .volume-icon,
+[data-theme="nature"] #current-time,
+[data-theme="nature"] #duration {
+    color: var(--text-primary);
+}
+
+[data-theme="nature"] .playlist-item .song-artist,
+[data-theme="nature"] .playlist-item .song-separator {
+    color: #3d563e;  /* Slightly more saturated gray-green */
+}
