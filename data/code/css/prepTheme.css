@@ -1,14 +1,14 @@
 :root[data-theme="prep"] {
-    --bg-primary: #fff2f5;          /* More pink tint */
-    --bg-secondary: #ffe0e7;        /* More pink tint */
-    --bg-tertiary: #ffd2dc;         /* More pink tint */
-    --text-primary: #2b1720;          /* Darkened from #4a2c3c */
-    --text-secondary: #4a2c3c;        /* Darkened from #755566 */
-    --accent-color: #e63d68;          /* Darkened from #ff6b8e */
-    --hover-color: rgba(255, 107, 142, 0.15);
+    --bg-primary: #fff0f4;          /* More saturated pink background */
+    --bg-secondary: #ffd6e1;        /* More saturated secondary */
+    --bg-tertiary: #ffc3d3;         /* More saturated tertiary */
+    --text-primary: #2b1720;        /* Keep dark text for contrast */
+    --text-secondary: #943d5a;      /* More saturated secondary text */
+    --accent-color: #ff3366;        /* Brighter, more vibrant accent */
+    --hover-color: rgba(255, 51, 102, 0.15);
     --button-bg: #ffffff;
-    --button-border: #ffd6df;
-    --button-shadow: rgba(0, 0, 0, 0.08);
+    --button-border: #ffb3c6;        /* More saturated border */
+    --button-shadow: rgba(255, 51, 102, 0.12);
     --channel-gradient: linear-gradient(102deg, 
         #ffffff 0%,
         #ffffff 12%,
@@ -66,5 +66,37 @@
 
 [data-theme="prep"] .playlist-item .song-artist,
 [data-theme="prep"] .playlist-item .song-separator {
-    color: #644956;  /* Slightly more saturated gray-pink */
+    color: #943d5a;  /* Match with text-secondary for consistency */
+}
+
+[data-theme="prep"] .playlist-controls {
+    background-color: #fff0f4;
+    border: 1px solid #ffb3c6;
+    box-shadow: 0 2px 8px rgba(255, 51, 102, 0.08);
+}
+
+[data-theme="prep"] .playlist-sort select,
+[data-theme="prep"] .search-box input {
+    background-color: #ffffff;
+    border: 1px solid #ffb3c6;
+    color: #2b1720;
+}
+
+[data-theme="prep"] .tab-btn {
+    background-color: #fff0f4;
+    color: #2b1720;
+    border: 1px solid #ffb3c6;
+    font-weight: 500;
+}
+
+[data-theme="prep"] .tab-btn:hover {
+    background-color: #ffd6e1;
+    border-color: #ff3366;
+}
+
+[data-theme="prep"] .tab-btn.active {
+    background-color: #ff3366;
+    color: #ffffff;
+    border-color: #ff3366;
+    font-weight: 600;
 }

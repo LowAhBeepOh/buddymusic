@@ -1,14 +1,14 @@
 :root[data-theme="nature"] {
-    --bg-primary: #eef5ec;          /* More green tint */
-    --bg-secondary: #e3f0e0;        /* More green tint */
-    --bg-tertiary: #d5e8d1;         /* More green tint */
-    --text-primary: #1a331a;          /* Darkened from #2c4a2a */
-    --text-secondary: #2d422e;        /* Darkened from #4a694b */
-    --accent-color: #2d7c2a;          /* Darkened from #5c9f5a */
-    --hover-color: rgba(92, 159, 90, 0.15);
+    --bg-primary: #f0f7e6;          /* More saturated green tint */
+    --bg-secondary: #ddecc6;        /* More saturated secondary */
+    --bg-tertiary: #cce4b0;         /* More saturated tertiary */
+    --text-primary: #1a331a;        /* Keep dark text for contrast */
+    --text-secondary: #2d6627;      /* More saturated secondary text */
+    --accent-color: #44aa33;        /* Brighter, more vibrant accent */
+    --hover-color: rgba(68, 170, 51, 0.15);
     --button-bg: #ffffff;
-    --button-border: #c5dbc4;
-    --button-shadow: rgba(0, 0, 0, 0.08);
+    --button-border: #99cc88;        /* More saturated border */
+    --button-shadow: rgba(68, 170, 51, 0.12);
     --channel-gradient: linear-gradient(102deg, 
         #ffffff 0%,
         #ffffff 12%,
@@ -66,5 +66,37 @@
 
 [data-theme="nature"] .playlist-item .song-artist,
 [data-theme="nature"] .playlist-item .song-separator {
-    color: #3d563e;  /* Slightly more saturated gray-green */
+    color: #2d6627;  /* Match with text-secondary for consistency */
+}
+
+[data-theme="nature"] .playlist-controls {
+    background-color: #e6f2d9;
+    border: 1px solid #99cc88;
+    box-shadow: 0 2px 8px rgba(68, 170, 51, 0.08);
+}
+
+[data-theme="nature"] .playlist-sort select,
+[data-theme="nature"] .search-box input {
+    background-color: #ffffff;
+    border: 1px solid #99cc88;
+    color: #1a331a;
+}
+
+[data-theme="nature"] .tab-btn {
+    background-color: #e6f2d9;
+    color: #1a331a;
+    border: 1px solid #99cc88;
+    font-weight: 500;
+}
+
+[data-theme="nature"] .tab-btn:hover {
+    background-color: #ddecc6;
+    border-color: #44aa33;
+}
+
+[data-theme="nature"] .tab-btn.active {
+    background-color: #44aa33;
+    color: #ffffff;
+    border-color: #44aa33;
+    font-weight: 600;
 }
