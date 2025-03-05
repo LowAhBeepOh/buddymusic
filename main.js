@@ -2298,13 +2298,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // Add event listeners for cleanup
-    document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'hidden') {
-            cleanup();
-        }
-    });
-
     window.addEventListener('pagehide', cleanup);
     window.addEventListener('beforeunload', cleanup);
 
