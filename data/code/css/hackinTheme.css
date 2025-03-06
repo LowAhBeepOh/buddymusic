@@ -10,22 +10,47 @@
     --button-bg: #1a1a1a;
     --button-border: #00ff00;
     image-rendering: pixelated;
+    --scanline-size: 4px;
+    --glitch-intensity: 0.5s;
+    --terminal-glow: 0 0 10px rgba(0, 255, 0, 0.3);
+    --crt-curve: 2deg;
 }
 
 [data-theme="hackin'"] * {
     border-radius: 0 !important;
     transition: none !important;
+    text-shadow: 0 0 5px rgba(0, 255, 0, 0.5);
+    font-family: 'Courier New', monospace;
 }
 
 [data-theme="hackin'"] .sidebar {
-    background: repeating-linear-gradient(
-        0deg,
-        var(--bg-secondary),
-        var(--bg-secondary) var(--pixel-size),
-        var(--bg-tertiary) var(--pixel-size),
-        var(--bg-tertiary) calc(var(--pixel-size) * 2)
+    background: linear-gradient(
+        90deg,
+        var(--bg-secondary) 0%,
+        transparent 50%,
+        var(--bg-secondary) 100%
     );
     border-right: var(--pixel-size) solid var(--accent-color);
+    position: relative;
+    overflow: hidden;
+}
+
+[data-theme="hackin'"] .sidebar::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent var(--scanline-size),
+        rgba(0, 255, 0, 0.03) var(--scanline-size),
+        rgba(0, 255, 0, 0.03) calc(var(--scanline-size) * 2)
+    );
+    pointer-events: none;
+    animation: scanlines 10s linear infinite;
 }
 
 [data-theme="hackin'"] .playlist-item {
@@ -40,6 +65,9 @@
         4px 100%,
         0 calc(100% - 4px)
     );
+    box-shadow: var(--terminal-glow);
+    position: relative;
+    overflow: hidden;
 }
 
 [data-theme="hackin'"] .playlist-item:hover {
@@ -52,6 +80,22 @@
     background: var(--hover-color);
     border-color: var(--text-primary);
     animation: pulse 2s infinite;
+}
+
+[data-theme="hackin'"] .playlist-item::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(0, 255, 0, 0.2),
+        transparent
+    );
+    animation: shine var(--glitch-intensity) linear infinite;
 }
 
 [data-theme="hackin'"] button,
@@ -67,6 +111,23 @@
     box-shadow: 
         calc(var(--pixel-size) * 2) calc(var(--pixel-size) * 2) 0 var(--accent-color),
         calc(var(--pixel-size) * -2) calc(var(--pixel-size) * -2) 0 var(--accent-color);
+    transform: perspective(1000px) rotateX(var(--crt-curve));
+}
+
+[data-theme="hackin'"] .album-art-wrapper::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+        rgba(0, 255, 0, 0.1) 50%,
+        rgba(0, 0, 0, 0.1) 50%
+    );
+    background-size: 100% calc(var(--scanline-size) * 2);
+    animation: scanlines 10s linear infinite;
+    pointer-events: none;
 }
 
 [data-theme="hackin'"] .album-art img {
@@ -101,6 +162,25 @@
 [data-theme="hackin'"] .progress-bar {
     border: var(--pixel-size) solid var(--accent-color);
     height: 10px;
+    position: relative;
+    overflow: hidden;
+}
+
+[data-theme="hackin'"] .progress-bar::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: repeating-linear-gradient(
+        90deg,
+        transparent,
+        transparent var(--pixel-size),
+        rgba(0, 255, 0, 0.2) var(--pixel-size),
+        rgba(0, 255, 0, 0.2) calc(var(--pixel-size) * 2)
+    );
+    animation: progressGlitch 2s linear infinite;
 }
 
 [data-theme="hackin'"] #volume {
@@ -110,6 +190,7 @@
 [data-theme="hackin'"] .song-metadata h3 {
     color: var(--text-primary);
     text-shadow: 2px 2px 0 var(--bg-primary);
+    animation: textGlitch 4s infinite;
 }
 
 [data-theme="hackin'"] .song-metadata p {
@@ -128,6 +209,32 @@
 
 [data-theme="hackin'"] .material-symbols-rounded {
     color: var(--text-primary);
+}
+
+[data-theme="hackin'"] .controls button {
+    border: var(--pixel-size) solid var(--accent-color);
+    position: relative;
+    overflow: hidden;
+}
+
+[data-theme="hackin'"] .controls button::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(
+        circle,
+        transparent 30%,
+        rgba(0, 255, 0, 0.1) 70%
+    );
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+[data-theme="hackin'"] .controls button:hover::before {
+    opacity: 1;
 }
 
 [data-theme="hackin'"] .controls button:hover {
@@ -158,6 +265,29 @@
     0% { border-color: var(--text-primary); }
     50% { border-color: transparent; }
     100% { border-color: var(--text-primary); }
+}
+
+@keyframes scanlines {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(var(--scanline-size)); }
+}
+
+@keyframes shine {
+    0% { left: -100%; }
+    100% { left: 100%; }
+}
+
+@keyframes progressGlitch {
+    0% { transform: translateX(-50%); }
+    100% { transform: translateX(0); }
+}
+
+@keyframes textGlitch {
+    0% { text-shadow: -2px 0 var(--accent-color); }
+    25% { text-shadow: 2px 2px var(--accent-color); }
+    50% { text-shadow: -1px -1px var(--accent-color); }
+    75% { text-shadow: 1px -2px var(--accent-color); }
+    100% { text-shadow: -2px 0 var(--accent-color); }
 }
 
 [data-theme="hackin'"] .player-section::before {
