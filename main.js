@@ -743,7 +743,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (existingMenu) existingMenu.remove();
 
         const isSaved = await checkIfSongIsSaved(song);
-
+        
+        // Update context menu to include playlist submenu
         const contextMenu = document.createElement('div');
         contextMenu.className = 'context-menu';
         contextMenu.innerHTML = `
@@ -751,6 +752,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <li data-action="queue">
                     <span class="material-symbols-rounded">queue_music</span>
                     Add to Queue
+                </li>
+                <li data-action="add-to-playlist">
+                    <span class="material-symbols-rounded">playlist_add</span>
+                    Save to playlist
+                    <span class="material-symbols-rounded" style="margin-left: auto;">chevron_right</span>
                 </li>
                 <li data-action="favorite">
                     <span class="material-symbols-rounded">favorite</span>
@@ -765,12 +771,45 @@ document.addEventListener('DOMContentLoaded', async () => {
                     Delete
                 </li>
             </ul>
+            <div class="context-submenu">
+                ${Array.from(playlistManager.playlists.keys()).map(name => `
+                    <li data-playlist="${name}">
+                        <span class="material-symbols-rounded">playlist_play</span>
+                        ${name}
+                    </li>
+                `).join('')}
+            </div>
         `;
 
+        // Position and show the menu
         contextMenu.style.top = `${event.pageY}px`;
         contextMenu.style.left = `${event.pageX}px`;
         document.body.appendChild(contextMenu);
 
+        // Add submenu interactions
+        const playlistOption = contextMenu.querySelector('[data-action="add-to-playlist"]');
+        const submenu = contextMenu.querySelector('.context-submenu');
+
+        playlistOption.addEventListener('mouseenter', () => {
+            submenu.style.display = 'block';
+            submenu.style.left = '100%';
+            submenu.style.top = playlistOption.offsetTop + 'px';
+        });
+
+        contextMenu.addEventListener('mouseleave', () => {
+            submenu.style.display = 'none';
+        });
+
+        // Add click handlers for playlist options
+        submenu.querySelectorAll('li').forEach(option => {
+            option.addEventListener('click', () => {
+                const playlistName = option.dataset.playlist;
+                playlistManager.addToPlaylist(playlistName, song);
+                contextMenu.remove();
+            });
+        });
+
+        // Rest of the click handlers
         contextMenu.addEventListener('click', async (e) => {
             const menuItem = e.target.closest('li');
             if (!menuItem) return;
@@ -1686,6 +1725,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             elements.playlist.parentNode.appendChild(actionsContainer);
         }
         
+        // Update the burger menu to include "Add all to playlist"
         actionsContainer.innerHTML = `
             <button class="queue-action-btn queue-all">
                 <span class="material-symbols-rounded">queue_music</span>
@@ -1696,6 +1736,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <span class="material-symbols-rounded">more_vert</span>
                 </button>
                 <div class="burger-dropdown">
+                    <button class="add-all-to-playlist">
+                        <span class="material-symbols-rounded">playlist_add</span>
+                        Add all to playlist
+                        <span class="material-symbols-rounded" style="margin-left: auto;">chevron_right</span>
+                    </button>
                     <button class="favorite-all">
                         <span class="material-symbols-rounded">favorite</span>
                         Favorite all
@@ -1709,10 +1754,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                         Delete all
                     </button>
                 </div>
+                <div class="playlist-submenu">
+                    ${Array.from(playlistManager.playlists.keys()).map(name => `
+                        <button class="playlist-option" data-playlist="${name}">
+                            <span class="material-symbols-rounded">playlist_play</span>
+                            ${name}
+                        </button>
+                    `).join('')}
+                </div>
             </div>
         `;
 
-        // Add queue all handler
+        // Add handlers for the existing buttons
         actionsContainer.querySelector('.queue-all').addEventListener('click', async () => {
             const songsToAdd = tempSearchResults.filter(song => !queue.includes(song));
             if (songsToAdd.length > 0) {
@@ -1789,6 +1842,32 @@ document.addEventListener('DOMContentLoaded', async () => {
                 showFeedback(burgerMenu, 'Songs deleted!');
                 burgerDropdown.classList.remove('active');
             }
+        });
+
+        // Add playlist submenu handlers
+        const addToPlaylistBtn = actionsContainer.querySelector('.add-all-to-playlist');
+        const playlistSubmenu = actionsContainer.querySelector('.playlist-submenu');
+
+        addToPlaylistBtn.addEventListener('mouseenter', () => {
+            playlistSubmenu.style.display = 'block';
+            playlistSubmenu.style.left = '100%';
+            playlistSubmenu.style.top = '0';
+        });
+
+        burgerDropdown.addEventListener('mouseleave', () => {
+            playlistSubmenu.style.display = 'none';
+        });
+
+        playlistSubmenu.querySelectorAll('.playlist-option').forEach(option => {
+            option.addEventListener('click', () => {
+                const playlistName = option.dataset.playlist;
+                tempSearchResults.forEach(song => {
+                    playlistManager.addToPlaylist(playlistName, song);
+                });
+                showFeedback(burgerMenu, `Added to ${playlistName}!`);
+                burgerDropdown.classList.remove('active');
+                playlistSubmenu.style.display = 'none';
+            });
         });
         
         actionsContainer.style.display = 'flex';
@@ -1868,6 +1947,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         elements.playlist.style.display = tab === 'main' ? 'block' : 'none';
         elements.queueList.style.display = tab === 'queue' ? 'block' : 'none';
         elements.recentList.style.display = tab === 'recent' ? 'block' : 'none';
+        const playlistsEl = document.getElementById('playlists-list');
+        playlistsEl.style.display = tab === 'playlists' ? 'block' : 'none';
+
+        if (tab === 'playlists') {
+            if (!playlistManager.currentPlaylist) {
+                playlistManager.renderPlaylists();
+            }
+        }
     }
 
     loadSong = function(index) {
@@ -2727,3 +2814,287 @@ function optimizeImage(imageUrl, maxWidth = 300) {
         img.src = imageUrl;
     });
 }
+
+class PlaylistManager {
+    constructor() {
+        this.playlists = new Map();
+        this.currentPlaylist = null;
+        this.loadPlaylists();
+        this.setupListeners();
+    }
+
+    loadPlaylists() {
+        const saved = localStorage.getItem('buddy-music-playlists');
+        if (saved) {
+            const data = JSON.parse(saved);
+            data.forEach(({name, songs}) => {
+                this.playlists.set(name, songs);
+            });
+        }
+    }
+
+    savePlaylists() {
+        const data = Array.from(this.playlists.entries()).map(([name, songs]) => ({
+            name,
+            songs
+        }));
+        localStorage.setItem('buddy-music-playlists', JSON.stringify(data));
+    }
+
+    createPlaylist(name) {
+        if (!name || this.playlists.has(name)) {
+            throw new Error('Invalid playlist name or playlist already exists');
+        }
+        this.playlists.set(name, []);
+        this.savePlaylists();
+        this.renderPlaylists();
+    }
+
+    openPlaylist(name) {
+        this.currentPlaylist = name;
+        document.querySelector('.back-btn').style.display = 'block';
+        this.renderPlaylistSongs(name);
+    }
+
+    showPlaylists() {
+        this.currentPlaylist = null;
+        document.querySelector('.back-btn').style.display = 'none';
+        this.renderPlaylists();
+    }
+
+    renderPlaylists() {
+        const container = document.querySelector('.playlists-container');
+        container.innerHTML = '';
+
+        if (this.playlists.size === 0) {
+            const emptyMessage = document.createElement('div');
+            emptyMessage.className = 'empty-playlist-message';
+            emptyMessage.textContent = 'No playlists yet. Click the + button to create one.';
+            container.appendChild(emptyMessage);
+            return;
+        }
+
+        this.playlists.forEach((songs, name) => {
+            const div = document.createElement('div');
+            div.className = 'playlist-item playlist-entry';
+            div.innerHTML = `
+                <div class="playlist-info">
+                    <span class="playlist-title">${name}</span>
+                    <span class="playlist-details">${songs.length} songs</span>
+                </div>
+                <div class="playlist-actions">
+                    <button class="play-playlist" title="Play playlist">
+                        <span class="material-symbols-rounded">play_arrow</span>
+                    </button>
+                    <button class="shuffle-playlist" title="Shuffle playlist">
+                        <span class="material-symbols-rounded">shuffle</span>
+                    </button>
+                    <button class="delete-playlist" title="Delete playlist">
+                        <span class="material-symbols-rounded">delete</span>
+                    </button>
+                </div>
+            `;
+
+            const playBtn = div.querySelector('.play-playlist');
+            const shuffleBtn = div.querySelector('.shuffle-playlist');
+            const deleteBtn = div.querySelector('.delete-playlist');
+
+            div.addEventListener('click', (e) => {
+                if (!e.target.closest('button')) {
+                    this.openPlaylist(name);
+                }
+            });
+
+            playBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.playPlaylist(name, false);
+            });
+
+            shuffleBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.playPlaylist(name, true);
+            });
+
+            deleteBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.deletePlaylist(name);
+            });
+
+            container.appendChild(div);
+        });
+    }
+
+    playPlaylist(name, shuffle = false) {
+        const playlist = this.playlists.get(name);
+        if (!playlist || playlist.length === 0) return;
+
+        // Convert playlist song IDs to actual song objects
+        const playlistSongs = playlist
+            .map(songId => {
+                const [title, artist] = songId.split('|||');
+                return songs.find(s => 
+                    s.metadata.title === title && 
+                    s.metadata.artist === artist
+                );
+            })
+            .filter(song => song); // Remove any null/undefined entries
+
+        if (playlistSongs.length === 0) return;
+
+        // If shuffle is true, randomize the playlist order
+        if (shuffle) {
+            for (let i = playlistSongs.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [playlistSongs[i], playlistSongs[j]] = [playlistSongs[j], playlistSongs[i]];
+            }
+        }
+
+        // Clear current queue and add playlist songs
+        queue.length = 0;
+        queue.push(...playlistSongs.slice(1)); // Add all songs except first to queue
+        
+        // Play the first song immediately
+        const firstSong = playlistSongs[0];
+        const songIndex = songs.indexOf(firstSong);
+        if (songIndex !== -1) {
+            loadSong(songIndex);
+        }
+
+        // Update queue display
+        updateQueueView();
+    }
+
+    renderPlaylistSongs(playlistName) {
+        const container = document.querySelector('.playlists-container');
+        container.innerHTML = ''; // Clear container first
+        
+        const playlist = this.playlists.get(playlistName);
+        if (!playlist) return;
+
+        playlist.forEach(songId => {
+            const [title, artist] = songId.split('|||');
+            const song = songs.find(s => 
+                s.metadata.title === title && 
+                s.metadata.artist === artist
+            );
+            if (song) {
+                const div = document.createElement('div');
+                div.className = 'playlist-item';
+                div.innerHTML = `
+                    <span class="song-title">${song.metadata.title}</span>
+                    <span class="song-separator"> - </span>
+                    <span class="song-artist">${song.metadata.artist}</span>
+                `;
+
+                div.addEventListener('click', () => {
+                    const songIndex = songs.indexOf(song);
+                    if (songIndex !== -1) {
+                        loadSong(songIndex);
+                    }
+                });
+
+                const removeBtn = document.createElement('button');
+                removeBtn.className = 'remove-from-playlist';
+                removeBtn.innerHTML = '<span class="material-symbols-rounded">remove</span>';
+                removeBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.removeFromPlaylist(playlistName, songId);
+                    div.remove();
+                });
+
+                div.appendChild(removeBtn);
+                container.appendChild(div);
+            }
+        });
+    }
+
+    deletePlaylist(name) {
+        if (confirm(`Are you sure you want to delete playlist "${name}"?`)) {
+            // Delete specific playlist
+            this.playlists.delete(name);
+            
+            // Save changes
+            const data = Array.from(this.playlists.entries()).map(([name, songs]) => ({
+                name,
+                songs
+            }));
+            localStorage.setItem('buddy-music-playlists', JSON.stringify(data));
+            
+            // Return to playlist list view and re-render
+            this.currentPlaylist = null;
+            document.querySelector('.back-btn').style.display = 'none';
+            this.renderPlaylists();
+        }
+    }
+
+    addToPlaylist(playlistName, song) {
+        const playlist = this.playlists.get(playlistName);
+        if (!playlist) return;
+        
+        const songId = `${song.metadata.title}|||${song.metadata.artist}`;
+        if (!playlist.includes(songId)) {
+            playlist.push(songId);
+            this.savePlaylists();
+        }
+    }
+
+    removeFromPlaylist(playlistName, songId) {
+        const playlist = this.playlists.get(playlistName);
+        if (!playlist) return;
+        
+        const index = playlist.indexOf(songId);
+        if (index > -1) {
+            playlist.splice(index, 1);
+            this.savePlaylists();
+        }
+    }
+
+    setupListeners() {
+        const backBtn = document.querySelector('.back-btn');
+        const newPlaylistBtn = document.querySelector('.new-playlist-btn');
+
+        backBtn?.addEventListener('click', () => {
+            this.showPlaylists();
+        });
+
+        newPlaylistBtn?.addEventListener('click', () => {
+            const name = prompt('Enter playlist name:');
+            if (name) {
+                try {
+                    this.createPlaylist(name);
+                } catch (e) {
+                    alert(e.message);
+                }
+            }
+        });
+    }
+}
+
+// Update the switchTab function to properly handle playlists view
+function switchTab(tab) {
+    currentPlaylist = tab;
+    elements.tabButtons.forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.tab === tab);
+    });
+    
+    elements.playlist.style.display = tab === 'main' ? 'block' : 'none';
+    elements.queueList.style.display = tab === 'queue' ? 'block' : 'none';
+    elements.recentList.style.display = tab === 'recent' ? 'block' : 'none';
+    const playlistsEl = document.getElementById('playlists-list');
+    playlistsEl.style.display = tab === 'playlists' ? 'block' : 'none';
+
+    if (tab === 'playlists') {
+        if (!playlistManager.currentPlaylist) {
+            playlistManager.renderPlaylists();
+        }
+    }
+}
+
+// Initialize playlist manager after DOM content is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    // ...existing code...
+    
+    // Initialize playlist manager
+    window.playlistManager = new PlaylistManager();
+    playlistManager.setupListeners();
+});
