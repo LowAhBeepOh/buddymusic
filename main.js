@@ -1222,13 +1222,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     elements.prevBtn.addEventListener('click', () => {
-        if (!visibleSongs.length) return;
+        if (!songs.length) return;
         
-        const currentVisibleIndex = visibleSongs.indexOf(songs[currentSongIndex]);
-        if (currentVisibleIndex > 0) {
-            loadSong(currentVisibleIndex - 1);
+        if (isShuffled) {
+            const currentShuffledIndex = shuffledSongs.indexOf(songs[currentSongIndex]);
+            if (currentShuffledIndex > 0) {
+                const prevSong = shuffledSongs[currentShuffledIndex - 1];
+                const prevIndex = songs.indexOf(prevSong);
+                loadSong(prevIndex);
+            } else if (loopState === 'all') {
+                loadSong(songs.indexOf(shuffledSongs[shuffledSongs.length - 1]));
+            }
         } else {
-            loadSong(visibleSongs.length - 1);
+            if (currentSongIndex > 0) {
+                loadSong(currentSongIndex - 1);
+            } else if (loopState === 'all') {
+                loadSong(songs.length - 1);
+            }
         }
     });
 
