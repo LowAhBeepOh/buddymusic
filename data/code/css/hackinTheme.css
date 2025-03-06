@@ -138,7 +138,6 @@
     border: var(--pixel-size) solid var(--accent-color);
     background: var(--bg-primary);
 }
-
 [data-theme="hackin'"] .tab-btn {
     clip-path: polygon(
         4px 0,
@@ -149,10 +148,17 @@
         0 4px
     );
 }
-
 [data-theme="hackin'"] .tab-btn.active {
     background: var(--accent-color);
     color: var(--bg-primary);
+}
+
+[data-theme="hackin'"] .tab-btn.active .material-symbols-rounded {
+    color: var(--bg-primary) !important;
+}
+
+[data-theme="hackin'"] .tab-btn:not(.active) .material-symbols-rounded {
+    color: var(--text-primary) !important;
 }
 
 [data-theme="hackin'"] .settings-panel {

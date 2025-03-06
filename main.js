@@ -1444,7 +1444,45 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function changeTheme(themeName) {
-        document.documentElement.setAttribute('data-theme', themeName);
+        const root = document.documentElement;
+        
+        // Clear any inline styles set by adaptive theme
+        if (root.getAttribute('data-theme') === 'adaptive') {
+            const adaptiveProperties = [
+                '--bg-primary',
+                '--bg-secondary',
+                '--bg-tertiary',
+                '--text-primary',
+                '--text-secondary',
+                '--accent-color',
+                '--hover-color',
+                '--text-tint',
+                '--album-glow',
+                '--button-text',
+                '--button-bg',
+                '--button-border',
+                '--button-shadow',
+                '--channel-gradient',
+                '--highlight-shadow',
+                '--button-highlight',
+                '--player-text',
+                '--player-text-secondary',
+                '--scrollbar-bg',
+                '--scrollbar-thumb',
+                '--scrollbar-thumb-hover',
+                '--button-active'
+            ];
+            
+            adaptiveProperties.forEach(property => {
+                root.style.removeProperty(property);
+            });
+
+            // Remove any transition properties
+            root.style.removeProperty('transition');
+        }
+
+        // Set new theme
+        root.setAttribute('data-theme', themeName);
         localStorage.setItem('buddy-music-theme', themeName);
     }
 

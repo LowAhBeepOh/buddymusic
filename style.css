@@ -689,6 +689,10 @@ select:focus {
     animation: weightPulse 1s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
+[data-theme="adaptive"] .tab-btn.active .material-symbols-rounded {
+    color: #000000 !important; /* Force black icon color to match text */
+}
+
 .sidebar-header {
     display: flex;
     justify-content: space-between;
