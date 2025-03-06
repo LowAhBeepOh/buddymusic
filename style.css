@@ -10,16 +10,6 @@
 }
 
 :root[data-theme="dark"] {
-    --bg-primary: #1a1a1a;
-    --bg-secondary: #2a2a2a;
-    --bg-tertiary: #3a3a3a;
-    --text-primary: #ffffff;
-    --text-secondary: #888888;
-    --accent-color: #1db954;
-    --hover-color: #404040;
-}
-
-:root[data-theme="spotify"] {
     --bg-primary: #121212;
     --bg-secondary: #181818;
     --bg-tertiary: #282828;
