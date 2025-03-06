@@ -2,7 +2,7 @@ class HackinEffect {
     constructor() {
         // Timing configurations (in milliseconds)
         this.config = {
-            displayTime: 10000,      // How long each text stays visible
+            displayTime: 8000,      // How long each text stays visible
             fadeOutTime: 500,       // How long the fade out animation takes
             commandInterval: 1500,   // Time between new commands
             messageInterval: 1250,   // Time between new messages
@@ -370,10 +370,3 @@ window.dispatchSongEvent = (eventName, songDetails) => {
     });
     document.dispatchEvent(event);
 };
-
-// Example usage of updateConfig:
-// hackinEffect.updateConfig({
-//     displayTime: 5000,      // Make text stay longer
-//     typewriterSpeed: 20,    // Make typing faster
-//     messageInterval: 1500   // Show messages more frequently
-// });
