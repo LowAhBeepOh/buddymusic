@@ -116,15 +116,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function adjustColorBrightness(color) {
-        if (!color) return [25, 25, 35];
+        if (!color) return [20, 20, 30]; // Darkened default color
         
         const hsl = rgbToHsl(color);
         
-        // Boost saturation
-        hsl[1] = Math.min(1, hsl[1] * 1.5); // 50% saturation boost
+        // Reduce saturation boost and lower brightness for darker colors
+        hsl[1] = Math.min(1, hsl[1] * 1.2); // Reduced saturation multiplier
         
-        // Force brightness to be at least 25%
-        hsl[2] = Math.max(0.25, Math.min(0.4, hsl[2])); // Ensure minimum 25% brightness
+        // Lower minimum brightness while keeping it readable
+        hsl[2] = Math.max(0.18, Math.min(0.35, hsl[2])); // Lowered brightness range
         
         return hslToRgb(hsl);
     }
@@ -145,16 +145,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         return 0.2126 * r + 0.7152 * g + 0.0722 * b;
     }
 
-    function adjustColorContrast(backgroundColor, textColor, minContrast = 7.5) {
+    function adjustColorContrast(backgroundColor, textColor, minContrast = 8.5) {
         let adjustedText = [...textColor];
         let contrast = calculateContrast(backgroundColor, adjustedText);
         let attempts = 0;
         
         while (contrast < minContrast && attempts < 100) {
             if (calculateLuminance(backgroundColor) > 0.5) {
-                adjustedText = adjustedText.map(c => Math.max(0, c - 40));
+                adjustedText = adjustedText.map(c => Math.max(0, c - 20)); // More gradual adjustments
             } else {
-                adjustedText = adjustedText.map(c => Math.min(255, c + 40));
+                adjustedText = adjustedText.map(c => Math.min(255, c + 20));
             }
             contrast = calculateContrast(backgroundColor, adjustedText);
             attempts++;
@@ -169,23 +169,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         // Ensure darkest color has minimum brightness
         const darkestHsl = rgbToHsl(darkest);
-        darkestHsl[2] = Math.max(0.25, darkestHsl[2]); // Force minimum 25% brightness
+        darkestHsl[2] = Math.max(0.15, darkestHsl[2]); // Reduced minimum brightness for darker backgrounds
         darkest = hslToRgb(darkestHsl);
         
-        primary = adjustColorBrightnessToPercentage(primary, 0.35);
-        secondary = adjustColorBrightnessToPercentage(secondary, 0.35);
+        primary = adjustColorBrightnessToPercentage(primary, 0.3); // Reduced from 0.4 for darker colors
+        secondary = adjustColorBrightnessToPercentage(secondary, 0.3); // Reduced from 0.4 for darker colors
         
         const glowColor = calculateGlowColor(mostColorful);
         
-        // Ensure text colors have proper contrast
-        const textColor = [255, 255, 255]; // Always use white text for better readability
+        // Enhanced text colors for better contrast
+        const textColor = [255, 255, 255];
         lightest = textColor;
-        const adjustedSecondaryText = [230, 230, 230]; // Light gray that's still very readable
-        const textTint = adjustColorContrast(darkest, mostColorful, 8);
+        const adjustedSecondaryText = [245, 245, 245]; // Even brighter secondary text
+        const textTint = adjustColorContrast(darkest, mostColorful, 9.0); // Increased contrast
         
-        // Adjust sidebar colors to ensure they're visible
-        const sidebarPrimary = adjustColorContrast(darkest, primary, 7);
-        const sidebarSecondary = adjustColorContrast(darkest, secondary, 7);
+        // Improved sidebar colors with better contrast
+        const sidebarPrimary = adjustColorContrast(darkest, primary, 8.0);
+        const sidebarSecondary = adjustColorContrast(darkest, secondary, 8.0);
         
         const toHex = (rgb) => '#' + rgb.map(x => Math.min(255, Math.max(0, Math.round(x))).toString(16).padStart(2, '0')).join('');
         const toRGBA = (rgb, alpha) => `rgba(${rgb.join(', ')}, ${alpha})`;
@@ -195,12 +195,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             '--bg-secondary': `linear-gradient(135deg, ${toHex(sidebarPrimary)} 0%, ${toHex(sidebarSecondary)} 100%)`,
             '--bg-tertiary': `linear-gradient(135deg, ${toHex(sidebarSecondary)} 0%, ${toHex(adjustColorBrightness(sidebarSecondary))} 100%)`,
             '--text-primary': toHex(lightest),
-            '--text-secondary': toRGBA(adjustedSecondaryText, 0.95), // Increased opacity for better visibility
-            '--accent-color': toHex(lightest),
-            '--hover-color': toRGBA(secondary, 0.4),
+            '--text-secondary': toRGBA(adjustedSecondaryText, 0.99), // Increased opacity for better readability
+            '--accent-color': toHex(textTint),
+            '--hover-color': toRGBA(secondary, 0.45), // Slightly reduced hover opacity for more subtle effect
             '--text-tint': toHex(textTint),
-            '--album-glow': toRGBA(glowColor, 0.5),
-            '--button-text': toHex([255, 255, 255]) // Ensure buttons always have white text
+            '--album-glow': toRGBA(glowColor, 0.55), // Slightly reduced glow effect
+            '--button-text': toHex([255, 255, 255])
         };
 
         requestAnimationFrame(() => {
@@ -218,9 +218,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     function adjustColorBrightnessToPercentage(color, percentage) {
         const hsl = rgbToHsl(color);
         
-        // Ensure minimum saturation and brightness
-        hsl[1] = Math.max(0.3, hsl[1]); // Minimum 30% saturation
-        hsl[2] = Math.min(Math.max(0.25, hsl[2]), 0.85); // Force brightness between 25% and 85%
+        // Slightly reduce saturation boost for more muted colors
+        hsl[1] = Math.max(0.35, Math.min(0.85, hsl[1] * 1.1)); // Reduced saturation limits
+        hsl[2] = Math.min(Math.max(0.3, hsl[2]), 0.8); // Improved brightness range
         
         const adjustedRgb = hslToRgb(hsl);
         return adjustedRgb.map(c => Math.min(255, Math.round(c)));
