@@ -129,11 +129,31 @@
     animation: scanlines 10s linear infinite;
     pointer-events: none;
 }
-
 [data-theme="hackin'"] .album-art img {
     image-rendering: pixelated;
+    filter: sepia(100%) hue-rotate(70deg) saturate(150%) brightness(90%);
+    transform: scale(0.99);
+    transition: filter 0.5s ease, image-rendering 0.5s ease, transform 0.5s ease;
 }
 
+[data-theme="hackin'"] .album-art:hover img {
+    image-rendering: auto;
+    filter: none;
+    transform: scale(1);
+}
+[data-theme="hackin'"] .album-art-wrapper::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: linear-gradient(transparent 50%, rgba(0, 255, 0, 0.03) 50%),
+                    linear-gradient(90deg, transparent 50%, rgba(0, 255, 0, 0.03) 50%);
+    background-size: 4px 4px;
+    pointer-events: none;
+    z-index: 1;
+}
 [data-theme="hackin'"] .playlist-controls {
     border: var(--pixel-size) solid var(--accent-color);
     background: var(--bg-primary);
