@@ -736,16 +736,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    async function showContextMenu(event, song, index) {
+    function showContextMenu(event, song, index) {
         event.preventDefault();
         
         const existingMenu = document.querySelector('.context-menu');
         if (existingMenu) existingMenu.remove();
-
-        const isSaved = await checkIfSongIsSaved(song);
         
+        // Create and show the menu immediately
         const contextMenu = document.createElement('div');
         contextMenu.className = 'context-menu';
+        
+        // Initial menu content with loading state for save option
         contextMenu.innerHTML = `
             <ul>
                 <li data-action="queue">
@@ -756,9 +757,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <span class="material-symbols-rounded">favorite</span>
                     ${isFavorite(song.metadata) ? 'Remove from Favorites' : 'Add to Favorites'}
                 </li>
-                <li data-action="save" ${isSaved ? 'class="disabled"' : ''}>
+                <li data-action="save">
                     <span class="material-symbols-rounded">save</span>
-                    ${isSaved ? 'Already Saved' : 'Save Locally'}
+                    Save Locally
                 </li>
                 <li data-action="delete">
                     <span class="material-symbols-rounded">delete</span>
@@ -767,10 +768,26 @@ document.addEventListener('DOMContentLoaded', async () => {
             </ul>
         `;
 
-        // Position and show the menu
+        // Position and show the menu immediately
         contextMenu.style.top = `${event.pageY}px`;
         contextMenu.style.left = `${event.pageX}px`;
         document.body.appendChild(contextMenu);
+        
+        // Asynchronously check if the song is saved and update the menu
+        checkIfSongIsSaved(song).then(isSaved => {
+            const saveItem = contextMenu.querySelector('li[data-action="save"]');
+            if (saveItem) {
+                if (isSaved) {
+                    saveItem.classList.add('disabled');
+                    saveItem.innerHTML = `
+                        <span class="material-symbols-rounded">save</span>
+                        Already Saved
+                    `;
+                }
+            }
+        }).catch(error => {
+            console.error('Error checking if song is saved:', error);
+        });
 
         // Rest of the click handlers
         contextMenu.addEventListener('click', async (e) => {
