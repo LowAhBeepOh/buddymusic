@@ -1342,6 +1342,7 @@ select:focus {
     background: var(--accent-color);
     border: 2px solid white;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    transform: translateY(-2px);
 }
 
 [data-theme="silver"] select,
@@ -1376,6 +1377,14 @@ select:focus {
     background: var(--bg-tertiary);
     border-radius: 24px;
     border: 1px solid var(--button-border);
+    padding: 15px 20px;
+}
+
+[data-theme="silver"] .playlist-controls {
+    background: var(--bg-tertiary);
+    border-radius: 24px;
+    border: 1px solid var(--button-border);
+    box-shadow: 0 2px 4px var(--button-shadow);
     padding: 15px 20px;
 }
 
