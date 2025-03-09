@@ -2180,10 +2180,21 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             case 'KeyP':
                 e.preventDefault();
-                if (currentSongIndex > 0) {
-                    loadSong(currentSongIndex - 1);
+                if (isShuffled) {
+                    const currentShuffledIndex = shuffledSongs.indexOf(songs[currentSongIndex]);
+                    if (currentShuffledIndex > 0) {
+                        const prevSong = shuffledSongs[currentShuffledIndex - 1];
+                        const prevIndex = songs.indexOf(prevSong);
+                        loadSong(prevIndex);
+                    } else if (loopState === 'all') {
+                        loadSong(songs.indexOf(shuffledSongs[shuffledSongs.length - 1]));
+                    }
                 } else {
-                    loadSong(songs.length - 1);
+                    if (currentSongIndex > 0) {
+                        loadSong(currentSongIndex - 1);
+                    } else if (loopState === 'all') {
+                        loadSong(songs.length - 1);
+                    }
                 }
                 break;
 
