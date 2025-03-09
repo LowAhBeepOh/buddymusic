@@ -708,6 +708,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     function createPlaylistItem(song, index, clickHandler) {
         const div = document.createElement('div');
         div.className = 'playlist-item';
+        div.dataset.songId = getSongId(song);
         div.innerHTML = `
             <span class="song-title">${song.metadata.title}</span>
             <span class="song-separator"> - </span>
@@ -988,7 +989,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const metadata = targetSong.metadata;
         const file = targetSong.file;
         
-        const songId = `${metadata.title}|||${metadata.artist}|||${metadata.album}`;
+        const songId = getSongId(targetSong);
         
         if (songId !== currentlyPlayingSongId) {
             currentlyPlayingSongId = songId;
@@ -1176,9 +1177,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         requestAnimationFrame(updateColors);
     }
 
+    function getSongId(song) {
+        return `${song.metadata.title}|||${song.metadata.artist}|||${song.metadata.album || ''}`;
+    }
+
     function highlightCurrentSong() {
-        document.querySelectorAll('.playlist-item').forEach((item, index) => {
-            item.classList.toggle('active', index === currentSongIndex);
+        const currentSong = songs[currentSongIndex];
+        if (!currentSong) return;
+        
+        const currentSongId = getSongId(currentSong);
+        document.querySelectorAll('.playlist-item').forEach(item => {
+            const songId = item.dataset.songId;
+            item.classList.toggle('active', songId === currentSongId);
         });
     }
 
