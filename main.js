@@ -31,7 +31,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         folderInput: document.getElementById('folder-input'),
         clearDatabaseBtn: document.getElementById('clear-database'),
         clearEverythingBtn: document.getElementById('clear-everything'),
-        autoSaveSelect: document.getElementById('auto-save')
+        autoSaveSelect: document.getElementById('auto-save'),
+        addBtn: document.getElementById('add-btn'),
+        addDropdown: document.getElementById('add-dropdown')
     };
 
     let audioContext;
@@ -44,6 +46,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         lightest: [255, 255, 255],
         mostColorful: [100, 100, 100]
     };
+    
+    // Add button dropdown functionality
+    elements.addBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        elements.addDropdown.classList.toggle('show');
+    });
+    
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!elements.addBtn.contains(e.target) && !elements.addDropdown.contains(e.target)) {
+            elements.addDropdown.classList.remove('show');
+        }
+    });
 
     function getImageColors(imgElement) {
         return new Promise((resolve) => {

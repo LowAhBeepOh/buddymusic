@@ -30,9 +30,21 @@
             <div class="sidebar-header">
                 <h2>Buddy Music (Beta)</h2>
                 <div class="header-buttons">
-                    <label for="folder-input" class="icon-btn add-icon" style="width: 40px; height: 40px;">
-                        <span class="material-symbols-rounded">add</span>
-                    </label>
+                    <div class="add-button-container">
+                        <button class="icon-btn add-icon" id="add-btn" style="width: 40px; height: 40px;">
+                            <span class="material-symbols-rounded">add</span>
+                        </button>
+                        <div class="add-dropdown" id="add-dropdown">
+                            <label for="file-input" class="add-option">
+                                <span class="material-symbols-rounded">music_note</span>
+                                Add songs
+                            </label>
+                            <label for="folder-input" class="add-option">
+                                <span class="material-symbols-rounded">folder</span>
+                                Add folder
+                            </label>
+                        </div>
+                    </div>
                     <input type="file" id="folder-input" webkitdirectory directory multiple>
                     <button id="settings-btn" class="icon-btn">
                         <span class="material-symbols-rounded">settings</span>
