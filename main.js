@@ -2122,9 +2122,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const startIndex = songs.length;
         
         // Process folders sequentially
-        for (const [folderName, files] of folders) {
-            const folderFiles = files.length;
-            
+        for (const [files] of folders) {
             await updatePlaylist(files, (processedCount) => {
                 processedFiles += processedCount;
                 requestAnimationFrame(() => {
