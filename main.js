@@ -1610,6 +1610,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         setItems(items) {
             this.items = items;
             this.innerContainer.style.height = `${items.length * this.itemHeight}px`;
+            
+            // Clear all cached items when the song list changes
+            this.cachedItems.forEach(element => element.remove());
+            this.cachedItems.clear();
+            this.visibleItems.clear();
+            
             this.render();
         }
     
