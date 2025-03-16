@@ -579,7 +579,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     elements.fileInput.addEventListener('change', async (e) => {
         const files = Array.from(e.target.files);
         songs = [];
-        await updatePlaylist(files);
+        
+        // Show loading indicator or message
+        console.log('Loading song metadata...');
+        
+        // Use SongManager to load only metadata initially
+        songs = await window.songManager.addSongs(files, getMetadata, (processedCount) => {
+            console.log(`Processed ${processedCount}/${files.length} songs`);
+        });
+        
+        // Update the playlist with the songs that have metadata loaded
+        visibleSongs = [...songs];
+        updatePlaylistView(visibleSongs);
+        
         if (songs.length > 0) loadSong(0);
     });
 
@@ -677,47 +689,31 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     async function updatePlaylist(files, onProgress) {
-        const startIndex = songs.length;
         const settings = getSettings();
-        const batchSize = 10;
         const updates = [];
-        let processed = 0;
-        let batchProcessedCount = 0;
-
-        for (let i = 0; i < files.length; i += batchSize) {
-            const batch = files.slice(i, i + batchSize);
-            const batchPromises = batch.map(async file => {
-                try {
-                    const metadata = await getMetadata(file);
-                    const song = { file, metadata };
-                    songs.push(song);
-
-                    if (settings.autoSave === 'all') {
-                        updates.push(songsDB.saveSong(song));
-                    } else if (settings.autoSave === 'favorites' && isFavorite(metadata)) {
-                        updates.push(songsDB.saveSong(song));
-                    }
-                    return song;
-                } catch (error) {
-                    console.error('Error processing file:', file.name, error);
-                    return null;
-                }
-            });
-
-            await Promise.all(batchPromises);
-            batchProcessedCount = batch.length;
-            processed += batch.length;
-            if (onProgress) onProgress(batchProcessedCount);
-            
-            visibleSongs = [...songs];
-            updatePlaylistView(visibleSongs);
-
-            await new Promise(resolve => setTimeout(resolve, 0));
+        
+        // Use SongManager to load only metadata initially
+        const newSongs = await window.songManager.addSongs(files, getMetadata, onProgress);
+        
+        // Handle database updates for the new songs
+        for (const song of newSongs) {
+            if (settings.autoSave === 'all') {
+                updates.push(songsDB.saveSong(song));
+            } else if (settings.autoSave === 'favorites' && isFavorite(song.metadata)) {
+                updates.push(songsDB.saveSong(song));
+            }
         }
-
+        
+        // Update the visible songs list
+        visibleSongs = [...songs];
+        updatePlaylistView(visibleSongs);
+        
+        // Handle any database errors
         Promise.all(updates).catch(error => {
             console.error('Error saving songs to database:', error);
         });
+        
+        return newSongs;
     }
 
     function createPlaylistItem(song, index, clickHandler) {
@@ -969,15 +965,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!song) return;
 
         try {
-            let audioBuffer = audioResourceManager.audioBuffers.get(song.file.name);
-            if (!audioBuffer) {
-                audioBuffer = await audioResourceManager.loadAudio(song.file);
-            }
-
-            if (audioBuffer) {
-                const blob = new Blob([audioBuffer], { type: song.file.type });
+            console.log(`Loading song: ${song.metadata.title} by ${song.metadata.artist}`);
+            
+            // Use SongManager to load the audio data only when needed
+            const songData = await window.songManager.loadSong(index);
+            
+            if (songData && songData.buffer) {
+                const blob = new Blob([songData.buffer], { type: song.file.type });
                 elements.audioPlayer.src = URL.createObjectURL(blob);
-                audioResourceManager.clearOldBuffers();
+                
+                // Log memory usage statistics
+                console.log('Memory usage:', window.songManager.getMemoryStats());
             }
         } catch (error) {
             console.error('Error loading song:', error);
@@ -2296,6 +2294,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                     favoritesDB.clearDatabase()
                 ]);
 
+                // Clear SongManager buffers
+                if (window.songManager) {
+                    window.songManager.clearAllBuffers();
+                    console.log('Song manager buffers cleared');
+                }
+                
                 songs = [];
                 favorites = new Set();
                 visibleSongs = [];
