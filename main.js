@@ -695,6 +695,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Use SongManager to load only metadata initially
         const newSongs = await window.songManager.addSongs(files, getMetadata, onProgress);
         
+        // Add new songs to the main songs array
+        songs = [...songs, ...newSongs];
+        
         // Handle database updates for the new songs
         for (const song of newSongs) {
             if (settings.autoSave === 'all') {
@@ -2125,7 +2128,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             await updatePlaylist(files, (processedCount) => {
                 processedFiles += processedCount;
                 requestAnimationFrame(() => {
-                    const percent = (processedFiles / totalAudioFiles) * 100;
+                    const percent = Math.min(100, (processedFiles / totalAudioFiles) * 100);
                     progressFill.style.width = `${percent}%`;
                     progressText.textContent = `Processing files: ${processedFiles}/${totalAudioFiles}`;
                 });

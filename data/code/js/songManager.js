@@ -18,6 +18,7 @@ class SongManager {
     async addSongs(files, getMetadataFn, onProgress) {
         const batchSize = 10;
         let processed = 0;
+        const newSongs = [];
 
         for (let i = 0; i < files.length; i += batchSize) {
             const batch = files.slice(i, i + batchSize);
@@ -38,6 +39,7 @@ class SongManager {
                         fileSize: file.size
                     });
                     
+                    newSongs.push(song);
                     return song;
                 } catch (error) {
                     console.error('Error processing file:', file.name, error);
@@ -45,15 +47,16 @@ class SongManager {
                 }
             });
 
-            await Promise.all(batchPromises);
-            processed += batch.length;
-            if (onProgress) onProgress(processed);
+            const batchResults = await Promise.all(batchPromises);
+            const validResults = batchResults.filter(result => result !== null);
+            processed += validResults.length;
+            if (onProgress) onProgress(validResults.length);
             
             // Allow UI to update
             await new Promise(resolve => setTimeout(resolve, 0));
         }
 
-        return this.songs;
+        return newSongs.filter(song => song !== null);
     }
 
     /**
