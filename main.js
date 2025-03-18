@@ -2082,37 +2082,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     elements.folderInput.addEventListener('change', async (e) => {
         const allFiles = Array.from(e.target.files);
         
-        // Sort files into folders for progress tracking
-        const folders = new Map();
-        let totalAudioFiles = 0;
+        // Filter audio files first
+        const audioFiles = allFiles.filter(file => 
+            file.type.startsWith('audio/') || 
+            file.name.endsWith('.mp3') || 
+            file.name.endsWith('.wav') ||
+            file.name.endsWith('.ogg') ||
+            file.name.endsWith('.m4a')
+        );
         
-        allFiles.forEach(file => {
-            const path = file.webkitRelativePath;
-            const folder = path.split('/')[0];
-            if (!folders.has(folder)) {
-                folders.set(folder, []);
-            }
-            if (file.type.startsWith('audio/') || 
-                file.name.endsWith('.mp3') || 
-                file.name.endsWith('.wav') ||
-                file.name.endsWith('.ogg') ||
-                file.name.endsWith('.m4a')) {
-                folders.get(folder).push(file);
-                totalAudioFiles++;
-            }
-        });
-
-        if (folders.size === 0 || totalAudioFiles === 0) {
+        if (audioFiles.length === 0) {
             alert('No audio files found in the selected folders');
             return;
         }
 
-        let processedFiles = 0;
-        
         const progress = document.createElement('div');
         progress.className = 'folder-progress';
         progress.innerHTML = `
-            <div class="progress-text">Processing files: 0/${totalAudioFiles}</div>
+            <div class="progress-text">Processing files: 0/${audioFiles.length}</div>
             <div class="progress-bar">
                 <div class="progress-fill"></div>
             </div>
@@ -2126,27 +2113,26 @@ document.addEventListener('DOMContentLoaded', async () => {
         const progressText = progress.querySelector('.progress-text');
 
         const startIndex = songs.length;
-        
-        // Process folders sequentially
-        for (const [files] of folders) {
-            await updatePlaylist(files, (processedCount) => {
-                processedFiles += processedCount;
+        let processedFiles = 0;
+
+        try {
+            await updatePlaylist(audioFiles, (count) => {
+                processedFiles += count;
+                const percent = Math.min(100, (processedFiles / audioFiles.length) * 100);
                 requestAnimationFrame(() => {
-                    const percent = Math.min(100, (processedFiles / totalAudioFiles) * 100);
                     progressFill.style.width = `${percent}%`;
-                    progressText.textContent = `Processing files: ${processedFiles}/${totalAudioFiles}`;
+                    progressText.textContent = `Processing files: ${processedFiles}/${audioFiles.length}`;
                 });
             });
-            
-            await new Promise(resolve => setTimeout(resolve, 50));
+
+            if (startIndex === 0 && songs.length > 0) {
+                loadSong(0);
+            }
+        } catch (error) {
+            console.error('Error processing files:', error);
         }
 
-        if (startIndex === 0 && songs.length > 0) {
-            loadSong(0);
-        }
-        
         // Fade out and remove progress indicator
-        progress.style.opacity = '1';
         await new Promise(resolve => setTimeout(resolve, 500));
         progress.style.opacity = '0';
         progress.style.transition = 'opacity 0.5s ease';
