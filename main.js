@@ -918,7 +918,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (song) {
             document.title = `${song.metadata.title} - ${song.metadata.artist}`;
         } else {
-            document.title = "Buddy Music - ver 0.XC";
+            document.title = "Buddy Music";
         }
     }
 
