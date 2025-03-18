@@ -692,8 +692,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         const settings = getSettings();
         const updates = [];
         
+        // Ensure files is always an array
+        const fileArray = Array.from(files || []);
+        
         // Use SongManager to load only metadata initially
-        const newSongs = await window.songManager.addSongs(files, getMetadata, onProgress);
+        const newSongs = await window.songManager.addSongs(fileArray, getMetadata, onProgress);
         
         // Add new songs to the main songs array
         songs = [...songs, ...newSongs];
