@@ -578,21 +578,26 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     elements.fileInput.addEventListener('change', async (e) => {
         const files = Array.from(e.target.files);
-        songs = [];
         
         // Show loading indicator or message
         console.log('Loading song metadata...');
         
-        // Use SongManager to load only metadata initially
-        songs = await window.songManager.addSongs(files, getMetadata, (processedCount) => {
+        // Use SongManager to load only metadata initially and append to existing songs
+        const newSongs = await window.songManager.addSongs(files, getMetadata, (processedCount) => {
             console.log(`Processed ${processedCount}/${files.length} songs`);
         });
         
-        // Update the playlist with the songs that have metadata loaded
+        // Append new songs instead of reassigning the array
+        songs.push(...newSongs);
+        
+        // Update the playlist with all songs
         visibleSongs = [...songs];
         updatePlaylistView(visibleSongs);
         
-        if (songs.length > 0) loadSong(0);
+        // Load first song only if no song is currently loaded
+        if (songs.length > 0 && !elements.audioPlayer.src) {
+            loadSong(0);
+        }
     });
 
     function getMetadata(file) {
@@ -695,8 +700,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Use SongManager to load only metadata initially
         const newSongs = await window.songManager.addSongs(files, getMetadata, onProgress);
         
-        // Add new songs to the main songs array
-        songs = [...songs, ...newSongs];
+        // Append new songs instead of reassigning the array
+        songs.push(...newSongs);
         
         // Handle database updates for the new songs
         for (const song of newSongs) {
