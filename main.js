@@ -592,6 +592,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         visibleSongs = [...songs];
         updatePlaylistView(visibleSongs);
         
+        // Dispatch custom event to notify URL search handler that songs are loaded and displayed
+        setTimeout(() => {
+            if (window.songLoadedEvent) {
+                document.dispatchEvent(window.songLoadedEvent);
+                console.log('Dispatched songsLoadedAndDisplayed event');
+            }
+        }, 100); // Small delay to ensure DOM is updated
+        
         if (songs.length > 0) loadSong(0);
     });
 
@@ -710,6 +718,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Update the visible songs list
         visibleSongs = [...songs];
         updatePlaylistView(visibleSongs);
+        
+        // Dispatch the custom event to notify that songs are loaded and displayed
+        if (window.songLoadedEvent) {
+            console.log('Dispatching songsLoadedAndDisplayed event');
+            document.dispatchEvent(window.songLoadedEvent);
+        }
         
         // Handle any database errors
         Promise.all(updates).catch(error => {
@@ -2023,6 +2037,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         requestAnimationFrame(() => {
             elements.playlist.innerHTML = '';
             elements.playlist.appendChild(fragment);
+            
+            // Dispatch the custom event to notify that songs are loaded and displayed
+            if (window.songLoadedEvent && window.songs && window.songs.length > 0) {
+                console.log('Dispatching songsLoadedAndDisplayed event from updatePlaylistView');
+                document.dispatchEvent(window.songLoadedEvent);
+            }
         });
     }
 
