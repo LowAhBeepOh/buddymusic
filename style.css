@@ -1779,3 +1779,51 @@ button#loop-btn .material-symbols-rounded {
 .burger-dropdown button:hover {
     background-color: var(--bg-tertiary);
 }
+
+[data-theme="adaptive"] {
+    /* Update transition properties */
+    --transition-duration: 0.3s;
+    --transition-timing: cubic-bezier(0.4, 0, 0.2, 1);
+    transition: 
+        background-color var(--transition-duration) var(--transition-timing),
+        color var(--transition-duration) var(--transition-timing),
+        border-color var(--transition-duration) var(--transition-timing);
+}
+
+[data-theme="adaptive"] * {
+    transition: 
+        background-color var(--transition-duration) var(--transition-timing),
+        color var(--transition-duration) var(--transition-timing),
+        border-color var(--transition-duration) var(--transition-timing),
+        transform var(--transition-duration) var(--transition-timing),
+        opacity var(--transition-duration) var(--transition-timing) !important;
+}
+
+[data-theme="adaptive"] .playlist-item {
+    transition: 
+        background-color var(--transition-duration) var(--transition-timing),
+        transform var(--transition-duration) var(--transition-timing),
+        border-color var(--transition-duration) var(--transition-timing) !important;
+}
+
+[data-theme="adaptive"] .tab-btn {
+    transition: 
+        background-color var(--transition-duration) var(--transition-timing),
+        transform var(--transition-duration) var(--transition-timing),
+        border-color var(--transition-duration) var(--transition-timing),
+        box-shadow var(--transition-duration) var(--transition-timing) !important;
+}
+
+[data-theme="adaptive"] .album-art-wrapper,
+[data-theme="adaptive"] .album-art {
+    transition: 
+        transform var(--transition-duration) var(--transition-timing),
+        box-shadow var(--transition-duration) var(--transition-timing) !important;
+}
+
+[data-theme="adaptive"] .controls button {
+    transition: 
+        background-color var(--transition-duration) var(--transition-timing),
+        color var(--transition-duration) var(--transition-timing),
+        transform var(--transition-duration) var(--transition-timing) !important;
+}
