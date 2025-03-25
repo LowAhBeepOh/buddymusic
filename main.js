@@ -1063,35 +1063,47 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         if ('mediaSession' in navigator) {
+            // Set metadata for the currently playing media
             navigator.mediaSession.metadata = new MediaMetadata({
-                title: metadata.title,
-                artist: metadata.artist,
-                album: metadata.album,
-                artwork: metadata.coverUrl ? [{ src: metadata.coverUrl, sizes: '512x512', type: 'image/jpeg' }] : []
+                title: metadata.title || 'Unknown Title',
+                artist: metadata.artist || 'Unknown Artist',
+                album: metadata.album || 'Unknown Album',
+                artwork: metadata.coverUrl ? [
+                    { src: metadata.coverUrl, sizes: '96x96', type: 'image/jpeg' },
+                    { src: metadata.coverUrl, sizes: '128x128', type: 'image/jpeg' },
+                    { src: metadata.coverUrl, sizes: '192x192', type: 'image/jpeg' },
+                    { src: metadata.coverUrl, sizes: '256x256', type: 'image/jpeg' },
+                    { src: metadata.coverUrl, sizes: '384x384', type: 'image/jpeg' },
+                    { src: metadata.coverUrl, sizes: '512x512', type: 'image/jpeg' }
+                ] : [{ src: './data/images/albumCoverFiller.png', sizes: '512x512', type: 'image/png' }]
             });
+
+            // Update playback state
+            navigator.mediaSession.playbackState = 'playing';
 
             // Add MediaSession action handlers
             navigator.mediaSession.setActionHandler('play', () => {
+                console.log('Media Session: play action triggered');
                 playAudio();
             });
             
             navigator.mediaSession.setActionHandler('pause', () => {
+                console.log('Media Session: pause action triggered');
                 pauseAudio();
             });
             
             navigator.mediaSession.setActionHandler('previoustrack', () => {
-                if (currentSongIndex > 0) {
-                    loadSong(currentSongIndex - 1);
-                } else {
-                    loadSong(songs.length - 1);
-                }
+                console.log('Media Session: previous track action triggered');
+                playPrevious();
             });
             
             navigator.mediaSession.setActionHandler('nexttrack', () => {
+                console.log('Media Session: next track action triggered');
                 playNext();
             });
             
             navigator.mediaSession.setActionHandler('seekto', (details) => {
+                console.log('Media Session: seek to action triggered', details);
                 if (details.fastSeek && 'fastSeek' in elements.audioPlayer) {
                     elements.audioPlayer.fastSeek(details.seekTime);
                     return;
@@ -1100,11 +1112,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
             
             navigator.mediaSession.setActionHandler('seekbackward', (details) => {
+                console.log('Media Session: seek backward action triggered');
                 const skipTime = details.seekOffset || 10;
                 elements.audioPlayer.currentTime = Math.max(elements.audioPlayer.currentTime - skipTime, 0);
             });
             
             navigator.mediaSession.setActionHandler('seekforward', (details) => {
+                console.log('Media Session: seek forward action triggered');
                 const skipTime = details.seekOffset || 10;
                 elements.audioPlayer.currentTime = Math.min(
                     elements.audioPlayer.currentTime + skipTime,
@@ -1228,10 +1242,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function playAudio() {
-        elements.audioPlayer.play();
-        isPlaying = true;
-        elements.playBtn.innerHTML = '<span class="material-symbols-rounded">pause</span>';
-        updateDocumentTitle(songs[currentSongIndex]);
+        elements.audioPlayer.play()
+            .then(() => {
+                isPlaying = true;
+                elements.playBtn.innerHTML = '<span class="material-symbols-rounded">pause</span>';
+                updateDocumentTitle(songs[currentSongIndex]);
+                
+                // Update Media Session state
+                if ('mediaSession' in navigator) {
+                    navigator.mediaSession.playbackState = 'playing';
+                }
+            })
+            .catch(error => {
+                console.error('Error playing audio:', error);
+            });
     }
 
     function pauseAudio() {
@@ -1239,6 +1263,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         isPlaying = false;
         elements.playBtn.innerHTML = '<span class="material-symbols-rounded">play_arrow</span>';
         updateDocumentTitle(null);
+        
+        // Update Media Session state
+        if ('mediaSession' in navigator) {
+            navigator.mediaSession.playbackState = 'paused';
+        }
     }
 
     elements.playBtn.addEventListener('click', () => {
@@ -1246,9 +1275,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         else playAudio();
     });
 
-    elements.prevBtn.addEventListener('click', () => {
+    elements.prevBtn.addEventListener('click', playPrevious);
+    
+    function playPrevious() {
         if (!songs.length) return;
         
+        // If current song has played for more than 5 seconds, restart it
+        if (elements.audioPlayer.currentTime > 5) {
+            elements.audioPlayer.currentTime = 0;
+            return;
+        }
+        
+        // Otherwise, go to the previous song
         if (isShuffled) {
             const currentShuffledIndex = shuffledSongs.indexOf(songs[currentSongIndex]);
             if (currentShuffledIndex > 0) {
@@ -1265,7 +1303,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 loadSong(songs.length - 1);
             }
         }
-    });
+    }
 
     elements.nextBtn.addEventListener('click', playNext);
 
@@ -1371,6 +1409,22 @@ document.addEventListener('DOMContentLoaded', async () => {
             playNext();
         } else if (loopState === 'none') {
             pauseAudio();
+            
+            // Update Media Session state
+            if ('mediaSession' in navigator) {
+                navigator.mediaSession.playbackState = 'none';
+            }
+        }
+    });
+    
+    // Update Media Session position state during playback
+    elements.audioPlayer.addEventListener('timeupdate', () => {
+        if ('mediaSession' in navigator && 'setPositionState' in navigator.mediaSession) {
+            navigator.mediaSession.setPositionState({
+                duration: elements.audioPlayer.duration || 0,
+                playbackRate: elements.audioPlayer.playbackRate,
+                position: elements.audioPlayer.currentTime || 0
+            });
         }
     });
 
@@ -1473,6 +1527,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         // Clear any inline styles set by adaptive theme
         if (root.getAttribute('data-theme') === 'adaptive') {
+            // Clear all inline styles completely to ensure no adaptive theme styles remain
+            const computedStyle = getComputedStyle(root);
+            for (let i = 0; i < computedStyle.length; i++) {
+                const property = computedStyle[i];
+                if (property.startsWith('--')) {
+                    root.style.removeProperty(property);
+                }
+            }
+            
+            // Explicitly clear known adaptive theme properties
             const adaptiveProperties = [
                 '--bg-primary',
                 '--bg-secondary',
@@ -1504,6 +1568,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             // Remove any transition properties
             root.style.removeProperty('transition');
+            
+            // Reset baseColors to default
+            baseColors = {
+                primary: [30, 30, 30],
+                secondary: [45, 45, 45],
+                darkest: [20, 20, 20],
+                lightest: [255, 255, 255],
+                mostColorful: [100, 100, 100]
+            };
         }
 
         // Set new theme
@@ -2004,9 +2077,21 @@ document.addEventListener('DOMContentLoaded', async () => {
                 song,
                 index,
                 (idx) => {
-                    songs = queue;
-                    currentSongIndex = idx;
-                    loadSong(idx);
+                    // Remove all songs before the clicked song in the queue
+                    const clickedSong = queue[idx];
+                    // Remove songs before the clicked one
+                    queue = queue.slice(idx);
+                    // Update the queue view to reflect the changes
+                    updateQueueView();
+                    // Find the song in the main songs array to play it
+                    const songIndex = songs.findIndex(s => 
+                        s.metadata.title === clickedSong.metadata.title && 
+                        s.metadata.artist === clickedSong.metadata.artist
+                    );
+                    if (songIndex !== -1) {
+                        currentSongIndex = songIndex;
+                        loadSong(songIndex);
+                    }
                 }
             );
             elements.queueList.appendChild(div);
@@ -2221,22 +2306,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             case 'KeyP':
                 e.preventDefault();
-                if (isShuffled) {
-                    const currentShuffledIndex = shuffledSongs.indexOf(songs[currentSongIndex]);
-                    if (currentShuffledIndex > 0) {
-                        const prevSong = shuffledSongs[currentShuffledIndex - 1];
-                        const prevIndex = songs.indexOf(prevSong);
-                        loadSong(prevIndex);
-                    } else if (loopState === 'all') {
-                        loadSong(songs.indexOf(shuffledSongs[shuffledSongs.length - 1]));
-                    }
-                } else {
-                    if (currentSongIndex > 0) {
-                        loadSong(currentSongIndex - 1);
-                    } else if (loopState === 'all') {
-                        loadSong(songs.length - 1);
-                    }
-                }
+                playPrevious();
                 break;
 
             case 'KeyL':
