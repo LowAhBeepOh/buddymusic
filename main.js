@@ -28,6 +28,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         fontSizeSelect: document.getElementById('font-size'),
         fontFamilySelect: document.getElementById('font-family'),
         reduceAnimationsToggle: document.getElementById('reduce-animations'),
+        useFuzzySearchToggle: document.getElementById('use-fuzzy-search'),
         folderInput: document.getElementById('folder-input'),
         clearDatabaseBtn: document.getElementById('clear-database'),
         clearEverythingBtn: document.getElementById('clear-everything'),
@@ -1777,9 +1778,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         playlistScroller.setItems(songList);
     }
 
+    // Add debouncing for search to improve performance
+    let searchTimeout;
     elements.searchInput.addEventListener('input', (e) => {
-        filterPlaylist(e.target.value || '');
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            filterPlaylist(e.target.value || '');
+        }, 300); // 300ms delay for better performance
     });
+    
+    // Initialize fuzzy search
+    const fuzzySearcher = new FuzzySearch();
 
     function generateArtistAbbreviations(artistName) {
         const words = artistName.toLowerCase().split(' ');
@@ -1822,8 +1831,22 @@ document.addEventListener('DOMContentLoaded', async () => {
             type: 'regular'
         };
 
-        const decadeMatch = searchLower.match(/(\d{2})'s?/);
-        if (decadeMatch) {
+        // Check for field-specific search with format field:term
+        const fieldSearch = searchLower.match(/^(title|artist|album|genre|year):(.+)$/);
+        if (fieldSearch) {
+            const [, field, term] = fieldSearch;
+            window.currentSearch.type = 'field';
+            window.currentSearch.field = field;
+            
+            // Use fuzzy search but only on the specific field
+            filtered = songs.filter(song => {
+                const fieldValue = song.metadata[field]?.toString().toLowerCase() || '';
+                return fuzzySearcher.stringSimilarity(fieldValue, term) >= fuzzySearcher.threshold;
+            });
+        }
+        // Check for decade search (e.g., "90's" or "90s")
+        else if (searchLower.match(/(\d{2})'?s?/)) {
+            const decadeMatch = searchLower.match(/(\d{2})'?s?/);
             const decade = decadeMatch[1];
             const yearPrefix = decade === '00' ? '20' : '19';
             const startYear = yearPrefix + decade;
@@ -1838,11 +1861,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return songYear >= window.currentSearch.startYear && songYear < window.currentSearch.endYear;
             });
         }
+        // Check for favorites search
         else if (searchLower === 'fav' || searchLower === 'favorite' || searchLower === 'favorites') {
             window.currentSearch.type = 'favorites';
             filtered = songs.filter(song => isFavorite(song.metadata));
         }
-        else {
+        // Check for exact match with quotes (e.g., "exact phrase")
+        else if (searchLower.startsWith('"') && searchLower.endsWith('"')) {
+            const exactTerm = searchLower.slice(1, -1);
+            window.currentSearch.type = 'exact';
+            
             filtered = songs.filter(song => {
                 const searchable = `
                     ${song.metadata.title} 
@@ -1851,12 +1879,28 @@ document.addEventListener('DOMContentLoaded', async () => {
                     ${song.metadata.year}
                     ${song.metadata.genre}
                 `.toLowerCase();
-
-                const artistAbbreviations = generateArtistAbbreviations(song.metadata.artist);
-
-                return searchable.includes(searchLower) || 
-                       [...artistAbbreviations].some(abbr => abbr === searchLower);
+                
+                return searchable.includes(exactTerm);
             });
+        }
+        // Default case: use fuzzy search if enabled, otherwise use basic search
+        else {
+            if (fuzzySearcher.enabled) {
+                window.currentSearch.type = 'fuzzy';
+                filtered = fuzzySearcher.search(songs, searchLower, generateArtistAbbreviations);
+            } else {
+                window.currentSearch.type = 'basic';
+                filtered = songs.filter(song => {
+                    const searchable = `
+                        ${song.metadata.title} 
+                        ${song.metadata.artist} 
+                        ${song.metadata.album}
+                        ${song.metadata.year}
+                        ${song.metadata.genre}
+                    `.toLowerCase();
+                    return searchable.includes(searchLower);
+                });
+            }
         }
 
         tempSearchResults = filtered;
@@ -2143,6 +2187,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         elements.fontSizeSelect.value = settings.fontSize;
         elements.fontFamilySelect.value = settings.fontFamily;
         elements.reduceAnimationsToggle.checked = settings.reduceAnimations;
+        elements.useFuzzySearchToggle.checked = settings.useFuzzySearch;
         elements.autoSaveSelect.value = settings.autoSave;
     }
 
@@ -2157,6 +2202,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                 el.classList.remove('scroll');
             });
         }
+        
+        // Apply fuzzy search setting
+        document.documentElement.setAttribute('data-fuzzy-search', settings.useFuzzySearch);
+        
+        // Update fuzzy searcher threshold if needed
+        if (fuzzySearcher) {
+            fuzzySearcher.enabled = settings.useFuzzySearch;
+        }
     }
 
     function saveSettings() {
@@ -2164,6 +2217,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             fontSize: elements.fontSizeSelect.value,
             fontFamily: elements.fontFamilySelect.value,
             reduceAnimations: elements.reduceAnimationsToggle.checked,
+            useFuzzySearch: elements.useFuzzySearchToggle.checked,
             autoSave: elements.autoSaveSelect.value
         };
         localStorage.setItem('buddy-music-settings', JSON.stringify(settings));
@@ -2182,6 +2236,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         'fontSizeSelect',
         'fontFamilySelect',
         'reduceAnimationsToggle',
+        'useFuzzySearchToggle',
         'autoSaveSelect'
     ].forEach(settingId => {
         elements[settingId].addEventListener('change', saveSettings);
