@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
     <style>
-        /* Default theme (dark) as fallback */
+
         :root {
             --bg-primary: #121212;
             --bg-secondary: #181818;
@@ -21,7 +21,7 @@
             --hover-color: #2a2a2a;
         }
         
-        /* Theme definitions from main CSS */
+
         :root[data-theme="fluid"] {
             --bg-primary: linear-gradient(135deg, #1a1f35 0%, #212b46 100%);
             --bg-secondary: linear-gradient(135deg, #2a3b5c 0%, #3a4b7c 100%);
@@ -146,7 +146,7 @@
             position: relative;
             width: 96px;
             height: 96px;
-            margin: 0 auto 30px;
+            margin: 0 auto 12px;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -156,27 +156,23 @@
             width: 96px;
             height: 96px;
             position: relative;
-            color: var(--accent-color); /* Apply theme accent color directly to SVG */
+            color: var(--accent-color);
         }
         
-        /* Special adjustment for hackin' theme */
         :root[data-theme="hackin'"] .logo {
             filter: drop-shadow(0 0 10px var(--accent-color)) brightness(1.2);
         }
 
-        /* Spinner removed as requested */
-
         .progress-container {
             width: 300px;
-            height: 6px; /* Increased height for better visibility */
-            background-color: rgba(0, 0, 0, 0.2); /* Default for dark themes */
+            height: 6px;
+            background-color: rgba(0, 0, 0, 0.2);
             border-radius: 3px;
             overflow: hidden;
             margin-top: 20px;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
-        
-        /* Adjust progress container background for light themes */
+
         :root[data-theme="silver"] .progress-container,
         :root[data-theme="nature"] .progress-container,
         :root[data-theme="prep"] .progress-container {
@@ -190,14 +186,14 @@
             background-color: var(--accent-color);
             border-radius: 3px;
             animation: progress 3s ease-in-out infinite;
-            box-shadow: 0 0 8px var(--accent-color); /* Add glow effect to progress bar */
+            box-shadow: 0 0 8px var(--accent-color);
         }
 
-        /* Text elements removed as requested */
 
-        /* Spin animation removed as spinner is no longer used */
 
-        /* Pulse animation removed as requested */
+
+
+
 
         @keyframes progress {
             0% { width: 0%; }
@@ -226,7 +222,7 @@
         }
     </style>
     <script>
-        // Function to initialize theme from localStorage
+        // Initialize theme from localStorage
         function initializeTheme() {
             // Get saved theme from localStorage or use dark as fallback
             const savedTheme = localStorage.getItem('buddy-music-theme') || 'dark';
@@ -237,10 +233,10 @@
             console.log('Loading screen using theme:', savedTheme);
         }
         
-        // Initialize theme when DOM is loaded
+
         document.addEventListener('DOMContentLoaded', initializeTheme);
         
-        // Initialize immediately as well to prevent flash of default theme
+
         initializeTheme();
     </script>
 </head>
@@ -270,18 +266,18 @@
     </div>
 
     <script>
-        // Simplified loading simulation with automatic redirect
+
         setTimeout(() => {
-            // Add fade-out animation to the entire page
+
             document.body.classList.add('fade-out');
             
-            // Redirect to the main page after the animation completes
+
             setTimeout(() => {
                 window.location.href = '../index.html';
-            }, 1000); // Match the duration of the fadeOut animation
-        }, 5000); // Wait 5 seconds before redirecting
+            }, 1000);
+        }, 5000);
         
-        // Optional: Simulate actual loading progress
+
         const progressBar = document.getElementById('progress');
         let progress = 0;
         
@@ -298,7 +294,7 @@
             }
         }
         
-        // Start progress simulation
+
         setTimeout(updateProgress, 800);
     </script>
 </body>
