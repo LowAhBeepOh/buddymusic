@@ -124,7 +124,6 @@
             justify-content: center;
             align-items: center;
             overflow: hidden;
-            padding: 5% 10%;
         }
 
         .loading-container {
@@ -132,35 +131,32 @@
             display: flex;
             flex-direction: column;
             align-items: center;
+            justify-content: center;
             gap: 16px;
-            padding: 60px;
+            padding: 0;
             max-width: 500px;
             margin: 0 auto;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
         }
 
         .logo-wrapper {
             position: relative;
-            width: 150px;
-            height: 150px;
-            margin-bottom: 30px;
+            width: 96px;
+            height: 96px;
+            margin: 0 auto 30px;
             display: flex;
             justify-content: center;
             align-items: center;
         }
 
         .logo {
-            width: 150px;
-            height: 150px;
+            width: 96px;
+            height: 96px;
             position: relative;
             color: var(--accent-color); /* Apply theme accent color directly to SVG */
-            filter: drop-shadow(0 0 8px var(--accent-color)); /* Add glow effect */
-        }
-        
-        /* Adjust SVG color for light themes */
-        :root[data-theme="silver"] .logo,
-        :root[data-theme="nature"] .logo,
-        :root[data-theme="prep"] .logo {
-            filter: drop-shadow(0 0 5px var(--accent-color)) saturate(1.2);
         }
         
         /* Special adjustment for hackin' theme */
@@ -251,7 +247,7 @@
 <body>
     <div class="loading-container">
         <div class="logo-wrapper">
-            <svg width="150" height="150" viewBox="0 0 960 960" fill="none" xmlns="http://www.w3.org/2000/svg" class="logo">
+            <svg width="72" height="72" viewBox="0 0 960 960" fill="none" xmlns="http://www.w3.org/2000/svg" class="logo">
                 <g clip-path="url(#clip0_193_7)">
                     <mask id="mask0_193_7" style="mask-type:luminance" maskUnits="userSpaceOnUse" x="0" y="0" width="960" height="960">
                         <path d="M0 0H960V960H0V0Z" fill="white"/>
