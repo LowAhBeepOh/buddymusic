@@ -1,11 +1,3 @@
-/**
- * Simplified Fuzzy Search Utility for Buddy Music
- * 
- * This module provides basic fuzzy search capabilities for the music player:
- * - Simple string similarity matching
- * - Basic fuzzy matching for handling misspellings and typos
- */
-
 class FuzzySearch {
     constructor() {
         // Minimum score threshold for matches (0-1)
@@ -13,18 +5,11 @@ class FuzzySearch {
         
         // Maximum edit distance for fuzzy matching
         this.maxEditDistance = 5;
-        
-        // Whether fuzzy search is enabled (controlled by settings)
-        // Disabled by default as it's still in beta
+
+        // Default setting
         this.enabled = false;
     }
-    
-    /**
-     * Calculate Levenshtein distance between two strings
-     * @param {string} str1 - First string
-     * @param {string} str2 - Second string
-     * @returns {number} - Edit distance
-     */
+
     levenshteinDistance(str1, str2) {
         const m = str1.length;
         const n = str2.length;
@@ -51,12 +36,6 @@ class FuzzySearch {
         return dp[m][n];
     }
     
-    /**
-     * Calculate similarity score between two strings (0-1)
-     * @param {string} str1 - First string
-     * @param {string} str2 - Second string
-     * @returns {number} - Similarity score (0-1)
-     */
     stringSimilarity(str1, str2) {
         if (!str1 && !str2) return 1; // Both empty = perfect match
         if (!str1 || !str2) return 0; // One empty = no match
@@ -87,14 +66,7 @@ class FuzzySearch {
         const maxLength = Math.max(s1.length, s2.length);
         return maxLength === 0 ? 1 : 1 - distance / maxLength;
     }
-    
-    /**
-     * Search songs with fuzzy matching
-     * @param {Array} songs - Array of song objects
-     * @param {string} searchTerm - Search term
-     * @param {Function} generateArtistAbbreviations - Function to generate artist abbreviations
-     * @returns {Array} - Filtered and sorted songs by relevance
-     */
+
     search(songs, searchTerm, generateArtistAbbreviations) {
         if (!searchTerm) return songs;
         
@@ -106,24 +78,14 @@ class FuzzySearch {
             let score = 0;
             const metadata = song.metadata;
             
-            // Check title
+            // Check stuff
             const titleScore = this.stringSimilarity(metadata.title, searchLower);
-            
-            // Check artist
             const artistScore = this.stringSimilarity(metadata.artist, searchLower);
-            
-            // Check album
             const albumScore = this.stringSimilarity(metadata.album, searchLower);
-            
-            // Check genre if available
             const genreScore = metadata.genre ? 
                 this.stringSimilarity(metadata.genre, searchLower) : 0;
-            
-            // Check year if available
             const yearScore = metadata.year ? 
                 this.stringSimilarity(metadata.year.toString(), searchLower) : 0;
-            
-            // Check for artist abbreviation matches
             const artistAbbreviations = generateArtistAbbreviations(metadata.artist);
             const hasAbbreviation = artistAbbreviations && artistAbbreviations.has(searchLower);
             
@@ -156,3 +118,4 @@ class FuzzySearch {
 
 // Export the FuzzySearch class
 window.FuzzySearch = FuzzySearch;
+// js pmo so much
