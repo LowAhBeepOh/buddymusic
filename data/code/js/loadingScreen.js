@@ -19,13 +19,28 @@ function initializeLoadingScreen() {
     const progressBar = document.getElementById('loading-progress');
     const appContainer = document.getElementById('app-container');
     
-    // Make sure loading screen is visible and app is hidden
-    if (loadingScreen) {
-        loadingScreen.classList.remove('hidden');
-    }
+    // Check if there are any songs to load
+    const hasSongs = window.songDatabase && window.songDatabase.length > 0;
     
-    if (appContainer) {
-        appContainer.classList.remove('visible');
+    // Only show loading screen if there are songs to load
+    if (hasSongs) {
+        if (loadingScreen) {
+            loadingScreen.classList.remove('hidden');
+        }
+        
+        if (appContainer) {
+            appContainer.classList.remove('visible');
+        }
+    } else {
+        // Skip loading screen if no songs
+        if (loadingScreen) {
+            loadingScreen.style.display = 'none';
+        }
+        
+        if (appContainer) {
+            appContainer.classList.add('visible');
+        }
+        return;
     }
 
     let songsLoaded = 0;
@@ -91,8 +106,10 @@ function initializeLoadingScreen() {
         }, 100);
     }
     
-    // Start initial animation
-    animateInitialProgress();
+    // Start initial animation only if there are songs
+    if (hasSongs) {
+        animateInitialProgress();
+    }
     
     // Expose functions to window
     window.loadingScreen = {
