@@ -580,12 +580,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     elements.fileInput.addEventListener('change', async (e) => {
         const files = Array.from(e.target.files);
         
-        // Show loading indicator or message
-        console.log('Loading song metadata...');
+        if (files.length === 0) return;
+        
+        // Show loading screen for large file imports
+        if (files.length > 5 && window.loadingScreen) {
+            window.loadingScreen.updateProgress(0, files.length);
+            document.getElementById('loading-screen').classList.remove('hidden');
+            document.getElementById('app-container').classList.remove('visible');
+            document.getElementById('loading-status').textContent = 'Loading new songs...';
+        }
         
         // Use SongManager to load only metadata initially and append to existing songs
         const newSongs = await window.songManager.addSongs(files, getMetadata, (processedCount) => {
             console.log(`Processed ${processedCount}/${files.length} songs`);
+            
+            // Update loading screen progress
+            if (files.length > 5 && window.loadingScreen) {
+                window.loadingScreen.updateProgress(processedCount, files.length);
+            }
         });
         
         // Append new songs instead of reassigning the array
@@ -594,6 +606,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Update the playlist with all songs
         visibleSongs = [...songs];
         updatePlaylistView(visibleSongs);
+        
+        // Hide loading screen if it was shown
+        if (files.length > 5 && window.loadingScreen) {
+            window.loadingScreen.hideLoadingScreen();
+        }
         
         // Dispatch custom event to notify URL search handler that songs are loaded and displayed
         setTimeout(() => {
@@ -2261,21 +2278,27 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        const progress = document.createElement('div');
-        progress.className = 'folder-progress';
-        progress.innerHTML = `
-            <div class="progress-text">Processing files: 0/${audioFiles.length}</div>
-            <div class="progress-bar">
-                <div class="progress-fill"></div>
-            </div>
-        `;
-        
-        const sidebar = document.querySelector('.sidebar');
-        const playlist = document.getElementById('playlist');
-        sidebar.insertBefore(progress, playlist);
-
-        const progressFill = progress.querySelector('.progress-fill');
-        const progressText = progress.querySelector('.progress-text');
+        // Show loading screen for large folder imports
+        if (audioFiles.length > 10 && window.loadingScreen) {
+            window.loadingScreen.updateProgress(0, audioFiles.length);
+            document.getElementById('loading-screen').classList.remove('hidden');
+            document.getElementById('app-container').classList.remove('visible');
+            document.getElementById('loading-status').textContent = 'Loading folder...';
+        } else {
+            // For smaller imports, use the in-app progress indicator
+            const progress = document.createElement('div');
+            progress.className = 'folder-progress';
+            progress.innerHTML = `
+                <div class="progress-text">Processing files: 0/${audioFiles.length}</div>
+                <div class="progress-bar">
+                    <div class="progress-fill"></div>
+                </div>
+            `;
+            
+            const sidebar = document.querySelector('.sidebar');
+            const playlist = document.getElementById('playlist');
+            sidebar.insertBefore(progress, playlist);
+        }
 
         const startIndex = songs.length;
         let processedFiles = 0;
@@ -2284,10 +2307,22 @@ document.addEventListener('DOMContentLoaded', async () => {
             await updatePlaylist(audioFiles, (count) => {
                 processedFiles += count;
                 const percent = Math.min(100, (processedFiles / audioFiles.length) * 100);
-                requestAnimationFrame(() => {
-                    progressFill.style.width = `${percent}%`;
-                    progressText.textContent = `Processing files: ${processedFiles}/${audioFiles.length}`;
-                });
+                
+                // Update loading screen for large imports
+                if (audioFiles.length > 10 && window.loadingScreen) {
+                    window.loadingScreen.updateProgress(processedFiles, audioFiles.length);
+                } else {
+                    // Update in-app progress indicator for smaller imports
+                    const progressFill = document.querySelector('.folder-progress .progress-fill');
+                    const progressText = document.querySelector('.folder-progress .progress-text');
+                    
+                    if (progressFill && progressText) {
+                        requestAnimationFrame(() => {
+                            progressFill.style.width = `${percent}%`;
+                            progressText.textContent = `Processing files: ${processedFiles}/${audioFiles.length}`;
+                        });
+                    }
+                }
             });
 
             if (startIndex === 0 && songs.length > 0) {
@@ -2297,12 +2332,20 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.error('Error processing files:', error);
         }
 
-        // Fade out and remove progress indicator
-        await new Promise(resolve => setTimeout(resolve, 500));
-        progress.style.opacity = '0';
-        progress.style.transition = 'opacity 0.5s ease';
-        await new Promise(resolve => setTimeout(resolve, 500));
-        progress.remove();
+        // Hide loading screen if it was shown
+        if (audioFiles.length > 10 && window.loadingScreen) {
+            window.loadingScreen.hideLoadingScreen();
+        } else {
+            // Fade out and remove in-app progress indicator
+            const progress = document.querySelector('.folder-progress');
+            if (progress) {
+                await new Promise(resolve => setTimeout(resolve, 500));
+                progress.style.opacity = '0';
+                progress.style.transition = 'opacity 0.5s ease';
+                await new Promise(resolve => setTimeout(resolve, 500));
+                progress.remove();
+            }
+        }
         
         elements.folderInput.value = '';
     });
@@ -2380,48 +2423,87 @@ document.addEventListener('DOMContentLoaded', async () => {
     elements.loopBtn.innerHTML = '<span class="material-symbols-rounded">repeat</span>';
     elements.loopBtn.style.color = '#1db954';
 
-    const savedSongs = await favoritesDB.getAllSongs();
-    savedSongs.forEach(songData => {
-        const key = songData.id;
-        favorites.add(key);
+    // Load songs from databases with loading screen progress updates
+    let totalSongsToLoad = 0;
+    let songsLoaded = 0;
+    
+    try {
+        // Get counts for progress calculation
+        const favoritesCount = (await favoritesDB.getAllSongs()).length;
+        const songsDBCount = (await songsDB.getAllSongs()).length;
+        totalSongsToLoad = favoritesCount + songsDBCount || 1; // Prevent division by zero
         
-        const file = new File([songData.file], `${songData.metadata.title}.mp3`, {
-            type: 'audio/mpeg'
+        // Update loading screen with initial count
+        if (window.loadingScreen) {
+            window.loadingScreen.updateProgress(0, totalSongsToLoad);
+        }
+        
+        // Load favorites
+        const savedSongs = await favoritesDB.getAllSongs();
+        savedSongs.forEach((songData, index) => {
+            const key = songData.id;
+            favorites.add(key);
+            
+            const file = new File([songData.file], `${songData.metadata.title}.mp3`, {
+                type: 'audio/mpeg'
+            });
+            
+            const exists = songs.some(s => 
+                s.metadata.title === songData.metadata.title && 
+                s.metadata.artist === songData.metadata.artist
+            );
+            
+            if (!exists) {
+                songs.push({
+                    file: file,
+                    metadata: songData.metadata
+                });
+            }
+            
+            // Update loading progress
+            songsLoaded++;
+            if (window.loadingScreen) {
+                window.loadingScreen.updateProgress(songsLoaded, totalSongsToLoad);
+            }
+        });
+
+        // Load songs from database
+        const savedSongsFromDB = await songsDB.getAllSongs();
+        savedSongsFromDB.forEach((songData, index) => {
+            const file = new File([songData.file], `${songData.metadata.title}.mp3`, {
+                type: 'audio/mpeg'
+            });
+            
+            const exists = songs.some(s => 
+                s.metadata.title === songData.metadata.title && 
+                s.metadata.artist === songData.metadata.artist
+            );
+            
+            if (!exists) {
+                songs.push({
+                    file: file,
+                    metadata: songData.metadata
+                });
+            }
+            
+            // Update loading progress
+            songsLoaded++;
+            if (window.loadingScreen) {
+                window.loadingScreen.updateProgress(songsLoaded, totalSongsToLoad);
+            }
         });
         
-        const exists = songs.some(s => 
-            s.metadata.title === songData.metadata.title && 
-            s.metadata.artist === songData.metadata.artist
-        );
-        
-        if (!exists) {
-            songs.push({
-                file: file,
-                metadata: songData.metadata
-            });
+        // If no songs were loaded, hide loading screen
+        if (totalSongsToLoad === 0 && window.loadingScreen) {
+            window.loadingScreen.hideLoadingScreen();
         }
-    });
-
-    updatePlaylistView(songs);
-
-    const savedSongsFromDB = await songsDB.getAllSongs();
-    savedSongsFromDB.forEach(songData => {
-        const file = new File([songData.file], `${songData.metadata.title}.mp3`, {
-            type: 'audio/mpeg'
-        });
-        
-        const exists = songs.some(s => 
-            s.metadata.title === songData.metadata.title && 
-            s.metadata.artist === songData.metadata.artist
-        );
-        
-        if (!exists) {
-            songs.push({
-                file: file,
-                metadata: songData.metadata
-            });
+    } catch (error) {
+        console.error('Error loading songs:', error);
+        // Hide loading screen in case of error
+        if (window.loadingScreen) {
+            window.loadingScreen.hideLoadingScreen();
         }
-    });
+    }
 
     updatePlaylistView(songs);
 
