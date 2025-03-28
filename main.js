@@ -582,21 +582,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         if (files.length === 0) return;
         
-        // Show loading screen for large file imports
-        if (files.length > 5 && window.loadingScreen) {
-            window.loadingScreen.updateProgress(0, files.length);
-            document.getElementById('loading-screen').classList.remove('hidden');
-            document.getElementById('app-container').classList.remove('visible');
-            document.getElementById('loading-status').textContent = 'Loading new songs...';
+        // Show compact loading bar for adding songs
+        if (window.loadingScreen) {
+            window.loadingScreen.updateCompactLoadingBar(0, files.length);
         }
         
         // Use SongManager to load only metadata initially and append to existing songs
         const newSongs = await window.songManager.addSongs(files, getMetadata, (processedCount) => {
             console.log(`Processed ${processedCount}/${files.length} songs`);
             
-            // Update loading screen progress
-            if (files.length > 5 && window.loadingScreen) {
-                window.loadingScreen.updateProgress(processedCount, files.length);
+            // Update compact loading bar progress
+            if (window.loadingScreen) {
+                window.loadingScreen.updateCompactLoadingBar(processedCount, files.length);
             }
         });
         
@@ -607,9 +604,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         visibleSongs = [...songs];
         updatePlaylistView(visibleSongs);
         
-        // Hide loading screen if it was shown
-        if (files.length > 5 && window.loadingScreen) {
-            window.loadingScreen.hideLoadingScreen();
+        // Hide compact loading bar
+        if (window.loadingScreen) {
+            window.loadingScreen.hideCompactLoadingBar();
         }
         
         // Dispatch custom event to notify URL search handler that songs are loaded and displayed
