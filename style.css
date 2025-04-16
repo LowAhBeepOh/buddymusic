@@ -135,18 +135,22 @@ body {
     font-family: Arial, sans-serif;
     background-color: var(--bg-primary);
     color: var(--text-primary);
+    padding: 16px;
+    height: 100vh;
+    overflow: hidden;
 }
 
 .container {
     display: flex;
-    height: 100vh;
+    height: calc(100vh - 32px);
+    gap: 16px;
+    margin-bottom: 16px;
 }
 
 .sidebar {
     width: 400px;
     background: linear-gradient(180deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
-    padding: 20px;
-    border-right: 1px solid var(--bg-tertiary);
+    padding: 16px;
     display: flex;
     flex-direction: column;
     height: 100%;
@@ -155,6 +159,7 @@ body {
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
 }
 
 .playlist {
@@ -288,6 +293,8 @@ body {
     background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-tertiary) 100%);
     position: relative;
     z-index: 0;
+    border-radius: 16px;
+    overflow: hidden;
 }
 
 .now-playing {
