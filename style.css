@@ -135,16 +135,16 @@ body {
     font-family: Arial, sans-serif;
     background-color: var(--bg-primary);
     color: var(--text-primary);
-    padding: 16px;
+    padding: 12px;
     height: 100vh;
     overflow: hidden;
 }
 
 .container {
     display: flex;
-    height: calc(100vh - 32px);
-    gap: 16px;
-    margin-bottom: 16px;
+    height: calc(100vh - 24px);
+    gap: 12px;
+    margin-bottom: 12px;
 }
 
 .sidebar {
@@ -159,7 +159,7 @@ body {
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
-    border-radius: 8px;
+    border-radius: 16px;
 }
 
 .playlist {
