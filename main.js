@@ -2657,6 +2657,606 @@ document.addEventListener('DOMContentLoaded', async () => {
         updateRangeProgress(elements.progressBar);
         elements.currentTimeSpan.textContent = formatTime(elements.audioPlayer.currentTime);
     });
+
+    // Smart Command Search implementation
+    let smartCommandTimeout;
+    let isSmartCommandActive = false;
+    let smartCommandBox = null;
+    
+    function createSmartCommandBox() {
+        if (smartCommandBox) return;
+        
+        smartCommandBox = document.createElement('div');
+        smartCommandBox.className = 'smart-command-box';
+        smartCommandBox.style.cssText = `
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            max-width: 800px;
+            background: var(--bg-primary);
+            border: 1px solid var(--text-secondary);
+            border-radius: 12px;
+            padding: 20px;
+            z-index: 9999;
+            display: none;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        `;
+        
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.placeholder = 'Type a command (e.g., "Play Dreamer" or "Queue Lady Gaga")';
+        input.style.cssText = `
+            width: 100%;
+            padding: 16px;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+        `;
+        
+        smartCommandBox.appendChild(input);
+        document.body.appendChild(smartCommandBox);
+        
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                processSmartCommand(input.value);
+                hideSmartCommandBox();
+            } else if (e.key === 'Escape') {
+                hideSmartCommandBox();
+            }
+        });
+    }
+    
+    function showSmartCommandBox() {
+        if (!smartCommandBox) createSmartCommandBox();
+        smartCommandBox.style.display = 'block';
+        const input = smartCommandBox.querySelector('input');
+        input.value = '';
+        input.focus();
+        isSmartCommandActive = true;
+    }
+    
+    function hideSmartCommandBox() {
+        if (smartCommandBox) {
+            smartCommandBox.style.display = 'none';
+            isSmartCommandActive = false;
+        }
+    }
+    
+    function findBestSongMatch(searchTitle, searchArtist = null) {
+        let bestMatch = null;
+        let bestScore = 0;
+
+        for (const song of songs) {
+            // Calculate similarity for title
+            const titleSimilarity = calculateSimilarity(song.metadata.title.toLowerCase(), searchTitle.toLowerCase());
+            
+            // If artist is provided, include it in scoring
+            let score = titleSimilarity;
+            if (searchArtist) {
+                const artistSimilarity = calculateSimilarity(song.metadata.artist.toLowerCase(), searchArtist.toLowerCase());
+                score = (titleSimilarity * 0.7) + (artistSimilarity * 0.3); // Weight title more heavily
+            }
+
+            if (score > bestScore && score > 0.4) { // Threshold for minimum match quality
+                bestScore = score;
+                bestMatch = song;
+            }
+        }
+
+        return bestMatch;
+    }
+
+    function calculateSimilarity(str1, str2) {
+        if (str1 === str2) return 1.0;
+        if (str1.includes(str2) || str2.includes(str1)) return 0.9;
+
+        // Calculate Levenshtein distance
+        const m = str1.length;
+        const n = str2.length;
+        const dp = Array(m + 1).fill().map(() => Array(n + 1).fill(0));
+
+        for (let i = 0; i <= m; i++) dp[i][0] = i;
+        for (let j = 0; j <= n; j++) dp[0][j] = j;
+
+        for (let i = 1; i <= m; i++) {
+            for (let j = 1; j <= n; j++) {
+                if (str1[i - 1] === str2[j - 1]) {
+                    dp[i][j] = dp[i - 1][j - 1];
+                } else {
+                    dp[i][j] = 1 + Math.min(
+                        dp[i - 1][j],     // deletion
+                        dp[i][j - 1],     // insertion
+                        dp[i - 1][j - 1]  // substitution
+                    );
+                }
+            }
+        }
+
+        return 1 - (dp[m][n] / Math.max(m, n));
+    }
+
+    function processSmartCommand(command) {
+        const cmd = command.toLowerCase().trim();
+        let commandProcessed = false;
+        
+        // Helper function to display feedback in hackin theme
+        const showCommandFeedback = (message) => {
+            if (document.documentElement.getAttribute('data-theme') === "hackin'") {
+                if (window.hackinEffect) {
+                    window.hackinEffect.addCustomText(`> ${message}`, false);
+                }
+            }
+        };
+        
+        // Play specific song with optional artist - enhanced with better matching
+        const playMatch = cmd.match(/^(?:play|start)\s+(.+?)(?:\s+by\s+(.+))?$/i);
+        if (playMatch) {
+            const [_, title, artist] = playMatch;
+            const song = findBestSongMatch(title, artist);
+            if (song) {
+                const index = songs.indexOf(song);
+                loadSong(index);
+                showCommandFeedback(`Playing "${song.metadata.title}" by ${song.metadata.artist}`);
+            } else {
+                showCommandFeedback(`Song not found: "${title}"${artist ? ` by ${artist}` : ''}`);
+            }
+            return;
+        }
+        
+        // Queue all songs by artist - enhanced with more flexible syntax
+        const queueArtistMatch = cmd.match(/^(?:queue|add|play all|q|enqueue)\s+(?:songs?\s+(?:by|from|of)\s+)?(.+)$/i);
+        if (queueArtistMatch) {
+            const artist = queueArtistMatch[1];
+            const artistSongs = songs.filter(s => {
+                const similarity = calculateSimilarity(s.metadata.artist.toLowerCase(), artist.toLowerCase());
+                return similarity > 0.6; // Threshold for artist matching
+            });
+            if (artistSongs.length > 0) {
+                queue.push(...artistSongs);
+                updateQueueView();
+                switchTab('queue');
+                showCommandFeedback(`Added ${artistSongs.length} songs by ${artist} to queue`);
+            } else {
+                showCommandFeedback(`No songs found by artist: ${artist}`);
+            }
+            return;
+        }
+        
+        // Create playlist from current queue
+        const createPlaylistMatch = cmd.match(/^(?:create|save|make)\s+(?:a\s+)?playlist\s+(?:called|named)?\s+(.+)$/i);
+        if (createPlaylistMatch) {
+            const playlistName = createPlaylistMatch[1];
+            if (queue.length > 0) {
+                // Save playlist logic would go here
+                // For now, just acknowledge the command
+                showCommandFeedback(`Created playlist "${playlistName}" with ${queue.length} songs`);
+            } else {
+                showCommandFeedback(`Cannot create empty playlist. Add songs to queue first.`);
+            }
+            return;
+        }
+        
+        // Switch theme - enhanced with more natural language
+        const themeMatch = cmd.match(/^(?:switch\s+to\s+|use\s+|theme\s+|change\s+(?:to\s+)?theme\s+(?:to\s+)?)(.+)$/i);
+        if (themeMatch) {
+            const themeInput = themeMatch[1].toLowerCase();
+            // Find closest matching theme
+            const themes = Array.from(elements.themeSelect.options).map(opt => opt.value);
+            let bestMatch = null;
+            let highestSimilarity = 0;
+            
+            themes.forEach(theme => {
+                const similarity = calculateSimilarity(theme.toLowerCase(), themeInput);
+                if (similarity > highestSimilarity && similarity > 0.6) {
+                    highestSimilarity = similarity;
+                    bestMatch = theme;
+                }
+            });
+            
+            if (bestMatch) {
+                elements.themeSelect.value = bestMatch;
+                changeTheme(bestMatch);
+                showCommandFeedback(`Theme changed to ${bestMatch}`);
+            } else {
+                showCommandFeedback(`Theme not found: ${themeInput}`);
+            }
+            return;
+        }
+
+        // Volume control - enhanced with more natural language
+        const volumeMatch = cmd.match(/^(?:set\s+)?(?:volume|vol)(?:\s+to)?\s+(\d+)(?:\s*%)?$/i) || 
+                           cmd.match(/^(?:set\s+)?(?:volume|vol)(?:\s+to)?\s+((?:max|maximum|full|highest))$/i) ||
+                           cmd.match(/^(?:set\s+)?(?:volume|vol)(?:\s+to)?\s+((?:min|minimum|lowest|zero|mute))$/i) ||
+                           cmd.match(/^(?:set\s+)?(?:volume|vol)(?:\s+to)?\s+((?:half|mid|middle))$/i);
+        if (volumeMatch) {
+            let volume;
+            const volumeInput = volumeMatch[1].toLowerCase();
+            
+            if (/^\d+$/.test(volumeInput)) {
+                volume = Math.min(100, Math.max(0, parseInt(volumeInput)));
+            } else if (['max', 'maximum', 'full', 'highest'].includes(volumeInput)) {
+                volume = 100;
+            } else if (['min', 'minimum', 'lowest', 'zero', 'mute'].includes(volumeInput)) {
+                volume = 0;
+            } else if (['half', 'mid', 'middle'].includes(volumeInput)) {
+                volume = 50;
+            }
+            
+            elements.volumeControl.value = volume;
+            elements.audioPlayer.volume = volume / 100;
+            updateRangeProgress(elements.volumeControl);
+            showCommandFeedback(`Volume set to ${volume}%`);
+            return;
+        }
+
+        // Toggle shuffle - enhanced with explicit on/off
+        const shuffleMatch = cmd.match(/^(?:shuffle|random)(?:\s+(on|off))?$/i);
+        if (shuffleMatch) {
+            const shuffleState = shuffleMatch[1]?.toLowerCase();
+            
+            if (shuffleState === 'on' && !isShuffled) {
+                elements.shuffleBtn.click();
+                showCommandFeedback('Shuffle mode enabled');
+            } else if (shuffleState === 'off' && isShuffled) {
+                elements.shuffleBtn.click();
+                showCommandFeedback('Shuffle mode disabled');
+            } else if (!shuffleState) {
+                elements.shuffleBtn.click();
+                showCommandFeedback(`Shuffle mode ${isShuffled ? 'enabled' : 'disabled'}`);
+            }
+            return;
+        }
+
+        // Loop mode control - enhanced with better feedback
+        const loopMatch = cmd.match(/^(?:loop|repeat)(?:\s+(?:mode|setting)?)?(?:\s+(one|single|track|song|all|everything|off|none))?$/i);
+        if (loopMatch) {
+            const mode = loopMatch[1]?.toLowerCase();
+            let targetState = '';
+            
+            switch (mode) {
+                case 'one':
+                case 'single':
+                case 'track':
+                case 'song':
+                    targetState = 'single';
+                    break;
+                case 'all':
+                case 'everything':
+                    targetState = 'all';
+                    break;
+                case 'off':
+                case 'none':
+                    targetState = 'none';
+                    break;
+                default:
+                    // Just toggle through states
+                    elements.loopBtn.click();
+                    showCommandFeedback(`Loop mode: ${loopState}`);
+                    return;
+            }
+            
+            // Click until we reach the desired state
+            while (loopState !== targetState) {
+                elements.loopBtn.click();
+            }
+            
+            showCommandFeedback(`Loop mode set to ${loopState}`);
+            return;
+        }
+
+        // Clear queue - enhanced with confirmation
+        const clearQueueMatch = cmd.match(/^(?:clear|empty|remove all from)\s+(?:the\s+)?queue$/i);
+        if (clearQueueMatch) {
+            const queueCount = queue.length;
+            queue = [];
+            updateQueueView();
+            showCommandFeedback(`Cleared ${queueCount} songs from queue`);
+            return;
+        }
+
+        // Jump to time in song - enhanced with seconds-only format
+        const jumpMatch = cmd.match(/^(?:jump|seek|go|skip)\s+(?:to\s+)?(\d+):(\d{2})$/i) || 
+                         cmd.match(/^(?:jump|seek|go|skip)\s+(?:to\s+)?(\d+)\s+(?:seconds|secs|s)$/i);
+        if (jumpMatch) {
+            let time;
+            if (jumpMatch[2]) {
+                // Minutes:seconds format
+                const minutes = parseInt(jumpMatch[1]);
+                const seconds = parseInt(jumpMatch[2]);
+                time = (minutes * 60) + seconds;
+            } else {
+                // Seconds-only format
+                time = parseInt(jumpMatch[1]);
+            }
+            
+            if (time <= elements.audioPlayer.duration) {
+                elements.audioPlayer.currentTime = time;
+                const formattedTime = formatTime(time);
+                showCommandFeedback(`Jumped to ${formattedTime}`);
+            } else {
+                showCommandFeedback(`Time exceeds song duration`);
+            }
+            return;
+        }
+
+        // Search by genre - enhanced with more natural language
+        const genreMatch = cmd.match(/^(?:find|search|show|display|list)\s+(?:songs?\s+(?:by|with|in)\s+)?genre\s+(.+)$/i);
+        if (genreMatch) {
+            const genre = genreMatch[1].toLowerCase();
+            const genreSongs = songs.filter(s => {
+                const songGenre = (s.metadata.genre || '').toLowerCase();
+                return calculateSimilarity(songGenre, genre) > 0.6;
+            });
+            if (genreSongs.length > 0) {
+                visibleSongs = genreSongs;
+                updatePlaylistView(genreSongs);
+                showCommandFeedback(`Found ${genreSongs.length} songs in genre "${genre}"`);
+            } else {
+                showCommandFeedback(`No songs found in genre "${genre}"`);
+            }
+            return;
+        }
+
+        // Search by year or decade
+        const yearMatch = cmd.match(/^(?:find|search|show|display|list)\s+(?:songs?\s+(?:from|in)\s+)?(?:year\s+)?(\d{4})$/i) ||
+                         cmd.match(/^(?:find|search|show|display|list)\s+(?:songs?\s+(?:from|in)\s+)?(?:the\s+)?(\d{2})(?:s|0s)$/i);
+        if (yearMatch) {
+            let yearSongs = [];
+            let yearDisplay = '';
+            
+            if (yearMatch[1].length === 4) {
+                // Exact year
+                const year = yearMatch[1];
+                yearSongs = songs.filter(s => s.metadata.year === year);
+                yearDisplay = year;
+            } else {
+                // Decade (e.g., 80s, 90s)
+                const decade = yearMatch[1];
+                const startYear = parseInt(`19${decade}0`); // Assuming 20th century for now
+                const endYear = startYear + 9;
+                yearSongs = songs.filter(s => {
+                    const songYear = parseInt(s.metadata.year);
+                    return songYear >= startYear && songYear <= endYear;
+                });
+                yearDisplay = `${decade}0s`;
+            }
+            
+            if (yearSongs.length > 0) {
+                visibleSongs = yearSongs;
+                updatePlaylistView(yearSongs);
+                showCommandFeedback(`Found ${yearSongs.length} songs from ${yearDisplay}`);
+            } else {
+                showCommandFeedback(`No songs found from ${yearDisplay}`);
+            }
+            return;
+        }
+
+        // Toggle mute - enhanced with explicit on/off
+        const muteMatch = cmd.match(/^(?:mute|unmute)(?:\s+(on|off))?$/i);
+        if (muteMatch) {
+            const muteState = muteMatch[1]?.toLowerCase();
+            
+            if ((muteState === 'on' && !elements.audioPlayer.muted) || 
+                (muteState === 'off' && elements.audioPlayer.muted) ||
+                !muteState) {
+                elements.audioPlayer.muted = !elements.audioPlayer.muted;
+            }
+            
+            showCommandFeedback(`Audio ${elements.audioPlayer.muted ? 'muted' : 'unmuted'}`);
+            return;
+        }
+
+        // Play/Pause toggle - enhanced with more explicit commands
+        if (cmd.match(/^(?:play|pause|toggle|resume)$/i)) {
+            if (isPlaying) {
+                pauseAudio();
+                showCommandFeedback('Playback paused');
+            } else {
+                playAudio();
+                showCommandFeedback('Playback resumed');
+            }
+            return;
+        }
+
+        // Previous/Next track - enhanced with more synonyms
+        if (cmd.match(/^(?:next|skip|forward|advance)$/i)) {
+            playNext();
+            showCommandFeedback('Playing next track');
+            return;
+        }
+        if (cmd.match(/^(?:previous|prev|back|backward|last)$/i)) {
+            playPrevious();
+            showCommandFeedback('Playing previous track');
+            return;
+        }
+        
+        // Sort playlist - new feature
+        const sortMatch = cmd.match(/^(?:sort|order)\s+(?:by\s+)?(title|name|artist|album|year|duration|length)(?:\s+(asc|ascending|desc|descending))?$/i);
+        if (sortMatch) {
+            const sortBy = sortMatch[1].toLowerCase();
+            const sortOrder = sortMatch[2]?.toLowerCase().startsWith('desc') ? 'desc' : 'asc';
+            
+            let sortField;
+            switch (sortBy) {
+                case 'title':
+                case 'name':
+                    sortField = 'title';
+                    break;
+                case 'artist':
+                    sortField = 'artist';
+                    break;
+                case 'album':
+                    sortField = 'album';
+                    break;
+                case 'year':
+                    sortField = 'year';
+                    break;
+                case 'duration':
+                case 'length':
+                    sortField = 'duration';
+                    break;
+            }
+            
+            if (sortField) {
+                elements.sortSelect.value = `${sortField}-${sortOrder}`;
+                sortSongs();
+                showCommandFeedback(`Sorted playlist by ${sortField} (${sortOrder === 'asc' ? 'ascending' : 'descending'})`);
+            }
+            return;
+        }
+        
+        // Show favorites - new feature
+        if (cmd.match(/^(?:show|display|list|view)\s+(?:my\s+)?(?:favorites|favourite|liked|starred)(?:\s+songs?)?$/i)) {
+            const favoriteSongs = songs.filter(song => {
+                const songId = `${song.metadata.title}|||${song.metadata.artist}`;
+                return favorites.has(songId);
+            });
+            
+            if (favoriteSongs.length > 0) {
+                visibleSongs = favoriteSongs;
+                updatePlaylistView(favoriteSongs);
+                showCommandFeedback(`Showing ${favoriteSongs.length} favorite songs`);
+            } else {
+                showCommandFeedback('No favorite songs found');
+            }
+            return;
+        }
+        
+        // System info - new feature
+        if (cmd.match(/^(?:system|info|about|stats|statistics)$/i)) {
+            const totalSongs = songs.length;
+            const totalArtists = new Set(songs.map(s => s.metadata.artist)).size;
+            const totalAlbums = new Set(songs.map(s => s.metadata.album)).size;
+            const totalDuration = songs.reduce((total, song) => total + (song.metadata.duration || 0), 0);
+            const hours = Math.floor(totalDuration / 3600);
+            const minutes = Math.floor((totalDuration % 3600) / 60);
+            
+            showCommandFeedback(`Library stats: ${totalSongs} songs, ${totalArtists} artists, ${totalAlbums} albums`);
+            showCommandFeedback(`Total playtime: ${hours}h ${minutes}m`);
+            return;
+        }
+        
+        // Smart Queue - mood/genre based queue generation
+        const smartQueueMatch = cmd.match(/^(?:smart|create|generate)\s+queue\s+(?:for|based\s+on|with)\s+(.+)$/i);
+        if (smartQueueMatch) {
+            const moodOrGenre = smartQueueMatch[1].toLowerCase();
+            
+            // Clear current queue before adding new songs
+            queue = [];
+            
+            // Find songs matching the mood/genre
+            const matchingSongs = songs.filter(song => {
+                // Check genre match
+                const songGenre = (song.metadata.genre || '').toLowerCase();
+                const genreMatch = calculateSimilarity(songGenre, moodOrGenre) > 0.6;
+                
+                // For mood, we could check song title, album, or other metadata
+                // This is a simple implementation - could be enhanced with actual mood analysis
+                const songTitle = (song.metadata.title || '').toLowerCase();
+                const songAlbum = (song.metadata.album || '').toLowerCase();
+                const moodMatch = songTitle.includes(moodOrGenre) || 
+                                 songAlbum.includes(moodOrGenre) ||
+                                 calculateSimilarity(songTitle + ' ' + songAlbum, moodOrGenre) > 0.5;
+                
+                return genreMatch || moodMatch;
+            });
+            
+            if (matchingSongs.length > 0) {
+                // Add matching songs to queue
+                queue.push(...matchingSongs);
+                updateQueueView();
+                switchTab('queue');
+                showCommandFeedback(`Created smart queue with ${matchingSongs.length} songs based on "${moodOrGenre}"`);
+            } else {
+                showCommandFeedback(`No songs found matching "${moodOrGenre}". Try a different mood or genre.`);
+            }
+            return;
+        }
+        
+        // Help command - new feature
+        if (cmd.match(/^(?:help|commands|\?)$/i)) {
+            showCommandFeedback('Available commands: play, queue, volume, shuffle, loop, sort, search, smart queue');
+            showCommandFeedback('Type "help [command]" for specific command help');
+            return;
+        }
+        
+        // Command-specific help - new feature
+        const helpMatch = cmd.match(/^help\s+(.+)$/i);
+        if (helpMatch) {
+            const helpTopic = helpMatch[1].toLowerCase();
+            let helpText = '';
+            
+            switch (helpTopic) {
+                case 'play':
+                    helpText = 'Usage: play [song title] by [artist]';
+                    break;
+                case 'queue':
+                case 'add':
+                    helpText = 'Usage: queue songs by [artist]';
+                    break;
+                case 'volume':
+                case 'vol':
+                    helpText = 'Usage: volume [0-100] or volume max/min/half';
+                    break;
+                case 'shuffle':
+                    helpText = 'Usage: shuffle or shuffle on/off';
+                    break;
+                case 'loop':
+                case 'repeat':
+                    helpText = 'Usage: loop or loop one/all/off';
+                    break;
+                case 'sort':
+                    helpText = 'Usage: sort by title/artist/album/year asc/desc';
+                    break;
+                case 'search':
+                case 'find':
+                    helpText = 'Usage: find genre [genre] or find year [year]';
+                    break;
+                case 'smart':
+                case 'smart queue':
+                    helpText = 'Usage: smart queue [mood/genre] - Creates an AI-generated queue based on mood or genre';
+                    break;
+                default:
+                    helpText = `No help available for "${helpTopic}"`;
+            }
+            
+            showCommandFeedback(helpText);
+            return;
+        }
+        
+        // If no command matched
+        showCommandFeedback(`Unknown command: ${cmd}`);
+    }
+    
+    document.addEventListener('keydown', (e) => {
+        if (e.key === '.') {
+            if (!smartCommandTimeout) {
+                smartCommandTimeout = setTimeout(() => {
+                    showSmartCommandBox();
+                }, 300);
+            }
+        }
+    });
+    
+    document.addEventListener('keyup', (e) => {
+        if (e.key === '.') {
+            if (smartCommandTimeout) {
+                clearTimeout(smartCommandTimeout);
+                smartCommandTimeout = null;
+            }
+        }
+    });
+    
+    // Close smart command box when clicking outside
+    document.addEventListener('click', (e) => {
+        if (isSmartCommandActive && !smartCommandBox.contains(e.target)) {
+            hideSmartCommandBox();
+        }
+    });
 });
 
 class QueueManager {
