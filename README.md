@@ -58,17 +58,19 @@ Still not in full development, but it will be done soon.
 This is a development branch and new features might have bugs or be incomplete. Please report any issues you encounter.
 
 ### Known Issues
-- Some addons are still in beta or development phase
 - CompactB AI integration is not yet fully implemented
-- Certain themes may need performance optimization
+- Adaptive theme is still not 100% done
 
-## Changelog from Main Branch
-- Added loading screen and progress indicators
-- Implemented new theme options
-- Added URL search functionality
-- Improved memory management
-- Enhanced search capabilities
-- Added addon support system
-- Updated UI elements and icons
-- Improved song buffering
-- Added development indicators
+### Tips for using
+- Add your songs manually before thinking we provide the songs.
+- Popping your PC won't play Pop music.
+- Doing a break dance gives you XP, hit a full combo and you'll get an achievement!
+- Playing any Phonk song will instantly IP ban you from all our apps.
+- Playing any Vocaloid song will instantly make you get a badge of honor.
+- Putting your PC on fire won't make your tracks fire, sorry.
+- I know where you live!
+- Remove Buddy and Buddy will remove you.
+- Wake up.
+- Wake up.
+- Wake up.
+- Doing a backflip will go to the previous song, a frontflip goes to the next song.
