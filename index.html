@@ -313,6 +313,48 @@
             </section>
 
             <section class="settings-section">
+                <h4>Audio</h4>
+                <div class="setting-item">
+                    <label for="eq-enabled">Enable Equalizer</label>
+                    <input type="checkbox" id="eq-enabled">
+                </div>
+                <div class="eq-controls" id="eq-controls" style="display: none;">
+                    <div class="eq-slider-group">
+                        <label for="eq-bass">Bass (60Hz)</label>
+                        <div class="slider-container">
+                            <input type="range" id="eq-bass" min="-12" max="12" value="0" step="0.5">
+                            <span class="slider-value" id="eq-bass-value">0 dB</span>
+                        </div>
+                    </div>
+                    <div class="eq-slider-group">
+                        <label for="eq-mid">Mid (1kHz)</label>
+                        <div class="slider-container">
+                            <input type="range" id="eq-mid" min="-12" max="12" value="0" step="0.5">
+                            <span class="slider-value" id="eq-mid-value">0 dB</span>
+                        </div>
+                    </div>
+                    <div class="eq-slider-group">
+                        <label for="eq-treble">Treble (8kHz)</label>
+                        <div class="slider-container">
+                            <input type="range" id="eq-treble" min="-12" max="12" value="0" step="0.5">
+                            <span class="slider-value" id="eq-treble-value">0 dB</span>
+                        </div>
+                    </div>
+                    <div class="eq-presets">
+                        <label for="eq-preset">Presets</label>
+                        <select id="eq-preset">
+                            <option value="flat">Flat</option>
+                            <option value="rock">Rock</option>
+                            <option value="pop">Pop</option>
+                            <option value="jazz">Jazz</option>
+                            <option value="classical">Classical</option>
+                            <option value="electronic">Electronic</option>
+                        </select>
+                    </div>
+                </div>
+            </section>
+
+            <section class="settings-section">
                 <h4>Storage</h4>
                 <div class="setting-item">
                     <label for="auto-save">Automatic Local Saving</label>

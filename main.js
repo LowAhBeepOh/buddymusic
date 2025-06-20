@@ -34,12 +34,28 @@ document.addEventListener('DOMContentLoaded', async () => {
         clearEverythingBtn: document.getElementById('clear-everything'),
         autoSaveSelect: document.getElementById('auto-save'),
         addBtn: document.getElementById('add-btn'),
-        addDropdown: document.getElementById('add-dropdown')
+        addDropdown: document.getElementById('add-dropdown'),
+        eqEnabled: document.getElementById('eq-enabled'),
+        eqControls: document.getElementById('eq-controls'),
+        eqBass: document.getElementById('eq-bass'),
+        eqMid: document.getElementById('eq-mid'),
+        eqTreble: document.getElementById('eq-treble'),
+        eqBassValue: document.getElementById('eq-bass-value'),
+        eqMidValue: document.getElementById('eq-mid-value'),
+        eqTrebleValue: document.getElementById('eq-treble-value'),
+        eqPreset: document.getElementById('eq-preset')
     };
 
     let audioContext;
     let analyser;
     let dataArray;
+    let eqFilters = {
+        bass: null,
+        mid: null,
+        treble: null
+    };
+    let sourceNode = null;
+    let eqEnabled = false;
     let baseColors = {
         primary: [30, 30, 30],
         secondary: [45, 45, 45],
@@ -709,7 +725,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             fontSize: 'medium',
             fontFamily: 'inter',
             reduceAnimations: false,
-            autoSave: 'favorites'
+            autoSave: 'favorites',
+            useFuzzySearch: true,
+            eqEnabled: false,
+            eqBass: 0,
+            eqMid: 0,
+            eqTreble: 0,
+            eqPreset: 'flat'
         };
     }
 
@@ -1150,9 +1172,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
                 analyser = audioContext.createAnalyser();
                 analyser.fftSize = 256;
-                const source = audioContext.createMediaElementSource(elements.audioPlayer);
-                source.connect(analyser);
-                analyser.connect(audioContext.destination);
+                sourceNode = audioContext.createMediaElementSource(elements.audioPlayer);
+                
+                // Initialize EQ filters
+                initializeEQ();
+                
+                // Connect audio chain
+                connectAudioChain();
+                
                 dataArray = new Uint8Array(analyser.frequencyBinCount);
             }
 
@@ -1162,6 +1189,80 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             highlightCurrentSong();
             playAudio();
+        }
+    }
+
+    // EQ Functions
+    function initializeEQ() {
+        if (!audioContext) return;
+        
+        // Create biquad filters for EQ
+        eqFilters.bass = audioContext.createBiquadFilter();
+        eqFilters.mid = audioContext.createBiquadFilter();
+        eqFilters.treble = audioContext.createBiquadFilter();
+        
+        // Configure filter types and frequencies
+        eqFilters.bass.type = 'lowshelf';
+        eqFilters.bass.frequency.setValueAtTime(320, audioContext.currentTime);
+        eqFilters.bass.gain.setValueAtTime(0, audioContext.currentTime);
+        
+        eqFilters.mid.type = 'peaking';
+        eqFilters.mid.frequency.setValueAtTime(1000, audioContext.currentTime);
+        eqFilters.mid.Q.setValueAtTime(1, audioContext.currentTime);
+        eqFilters.mid.gain.setValueAtTime(0, audioContext.currentTime);
+        
+        eqFilters.treble.type = 'highshelf';
+        eqFilters.treble.frequency.setValueAtTime(3200, audioContext.currentTime);
+        eqFilters.treble.gain.setValueAtTime(0, audioContext.currentTime);
+    }
+    
+    function connectAudioChain() {
+        if (!sourceNode || !audioContext) return;
+        
+        if (eqEnabled) {
+            // Connect through EQ filters
+            sourceNode.connect(eqFilters.bass);
+            eqFilters.bass.connect(eqFilters.mid);
+            eqFilters.mid.connect(eqFilters.treble);
+            eqFilters.treble.connect(analyser);
+            analyser.connect(audioContext.destination);
+        } else {
+            // Direct connection
+            sourceNode.connect(analyser);
+            analyser.connect(audioContext.destination);
+        }
+    }
+    
+    function updateEQFilter(filterType, value) {
+        if (!eqFilters[filterType] || !audioContext) return;
+        
+        const gain = parseFloat(value);
+        eqFilters[filterType].gain.setValueAtTime(gain, audioContext.currentTime);
+    }
+    
+    function applyEQPreset(preset) {
+        const presets = {
+            flat: { bass: 0, mid: 0, treble: 0 },
+            rock: { bass: 4, mid: -2, treble: 3 },
+            pop: { bass: 2, mid: 1, treble: 2 },
+            jazz: { bass: 1, mid: 2, treble: 1 },
+            classical: { bass: -1, mid: 1, treble: 2 },
+            electronic: { bass: 6, mid: -1, treble: 4 }
+        };
+        
+        if (presets[preset]) {
+            const values = presets[preset];
+            elements.eqBass.value = values.bass;
+            elements.eqMid.value = values.mid;
+            elements.eqTreble.value = values.treble;
+            
+            updateEQFilter('bass', values.bass);
+            updateEQFilter('mid', values.mid);
+            updateEQFilter('treble', values.treble);
+            
+            elements.eqBassValue.textContent = `${values.bass} dB`;
+            elements.eqMidValue.textContent = `${values.mid} dB`;
+            elements.eqTrebleValue.textContent = `${values.treble} dB`;
         }
     }
 
@@ -2203,6 +2304,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         elements.reduceAnimationsToggle.checked = settings.reduceAnimations;
         elements.useFuzzySearchToggle.checked = settings.useFuzzySearch;
         elements.autoSaveSelect.value = settings.autoSave;
+        
+        // Initialize EQ settings
+        eqEnabled = settings.eqEnabled;
+        elements.eqEnabled.checked = settings.eqEnabled;
+        elements.eqControls.style.display = settings.eqEnabled ? 'block' : 'none';
+        elements.eqBass.value = settings.eqBass;
+        elements.eqMid.value = settings.eqMid;
+        elements.eqTreble.value = settings.eqTreble;
+        elements.eqPreset.value = settings.eqPreset;
+        elements.eqBassValue.textContent = `${settings.eqBass} dB`;
+        elements.eqMidValue.textContent = `${settings.eqMid} dB`;
+        elements.eqTrebleValue.textContent = `${settings.eqTreble} dB`;
     }
 
     function applySettings(settings) {
@@ -2224,6 +2337,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (fuzzySearcher) {
             fuzzySearcher.enabled = settings.useFuzzySearch;
         }
+        
+        // Apply EQ settings if audio context exists
+        if (audioContext && eqFilters.bass) {
+            updateEQFilter('bass', settings.eqBass);
+            updateEQFilter('mid', settings.eqMid);
+            updateEQFilter('treble', settings.eqTreble);
+        }
     }
 
     function saveSettings() {
@@ -2232,7 +2352,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             fontFamily: elements.fontFamilySelect.value,
             reduceAnimations: elements.reduceAnimationsToggle.checked,
             useFuzzySearch: elements.useFuzzySearchToggle.checked,
-            autoSave: elements.autoSaveSelect.value
+            autoSave: elements.autoSaveSelect.value,
+            eqEnabled: elements.eqEnabled.checked,
+            eqBass: parseFloat(elements.eqBass.value),
+            eqMid: parseFloat(elements.eqMid.value),
+            eqTreble: parseFloat(elements.eqTreble.value),
+            eqPreset: elements.eqPreset.value
         };
         localStorage.setItem('buddy-music-settings', JSON.stringify(settings));
         applySettings(settings);
@@ -2254,6 +2379,51 @@ document.addEventListener('DOMContentLoaded', async () => {
         'autoSaveSelect'
     ].forEach(settingId => {
         elements[settingId].addEventListener('change', saveSettings);
+    });
+    
+    // EQ Event Listeners
+    elements.eqEnabled.addEventListener('change', (e) => {
+        eqEnabled = e.target.checked;
+        elements.eqControls.style.display = eqEnabled ? 'block' : 'none';
+        
+        // Reconnect audio chain
+        if (sourceNode && audioContext) {
+            sourceNode.disconnect();
+            if (eqFilters.bass) eqFilters.bass.disconnect();
+            if (eqFilters.mid) eqFilters.mid.disconnect();
+            if (eqFilters.treble) eqFilters.treble.disconnect();
+            if (analyser) analyser.disconnect();
+            
+            connectAudioChain();
+        }
+        
+        saveSettings();
+    });
+    
+    elements.eqBass.addEventListener('input', (e) => {
+        const value = e.target.value;
+        elements.eqBassValue.textContent = `${value} dB`;
+        updateEQFilter('bass', value);
+        saveSettings();
+    });
+    
+    elements.eqMid.addEventListener('input', (e) => {
+        const value = e.target.value;
+        elements.eqMidValue.textContent = `${value} dB`;
+        updateEQFilter('mid', value);
+        saveSettings();
+    });
+    
+    elements.eqTreble.addEventListener('input', (e) => {
+        const value = e.target.value;
+        elements.eqTrebleValue.textContent = `${value} dB`;
+        updateEQFilter('treble', value);
+        saveSettings();
+    });
+    
+    elements.eqPreset.addEventListener('change', (e) => {
+        applyEQPreset(e.target.value);
+        saveSettings();
     });
 
     initializeSettings();
@@ -3427,6 +3597,9 @@ function playSong(song) {
         // Create a new audio context only if needed
         if (!audioContext) {
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            
+            // Initialize EQ filters
+            initializeEQ();
         }
 
         // Clean up previous audio resources
@@ -3563,9 +3736,12 @@ function playSong(song) {
         if (!analyser && audioContext) {
             analyser = audioContext.createAnalyser();
             analyser.fftSize = 256;
-            const source = audioContext.createMediaElementSource(elements.audioPlayer);
-            source.connect(analyser);
-            analyser.connect(audioContext.destination);
+            
+            if (!sourceNode) {
+                sourceNode = audioContext.createMediaElementSource(elements.audioPlayer);
+                connectAudioChain();
+            }
+            
             dataArray = new Uint8Array(analyser.frequencyBinCount);
         }
 
