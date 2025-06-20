@@ -2,7 +2,7 @@
   "name": "Buddy Music",
   "short_name": "Buddy Music",
   "description": "Offline Music Player by Buddy and LoaBeepo",
-  "version": "0.XC",
+  "version": "0.XD",
   "icons": [
     {
       "src": "data/assets/buddyicon.music.svg",

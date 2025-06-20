@@ -1,0 +1,147 @@
+/* Sponsor Popup Styles */
+
+.sponsor-popup-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+}
+
+.sponsor-popup-overlay.active {
+    opacity: 1;
+}
+
+.sponsor-popup-overlay.fade-out {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.sponsor-popup {
+    background-color: var(--bg-primary);
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    width: 90%;
+    max-width: 500px;
+    transform: translateY(20px);
+    transition: transform 0.3s ease;
+    border: 1px solid var(--bg-tertiary);
+    overflow: hidden;
+}
+
+.sponsor-popup-overlay.active .sponsor-popup {
+    transform: translateY(0);
+}
+
+.sponsor-popup-content {
+    padding: 24px;
+}
+
+.sponsor-popup-content h2 {
+    color: var(--text-primary);
+    margin-top: 0;
+    margin-bottom: 16px;
+    font-size: 24px;
+    text-align: center;
+}
+
+.sponsor-popup-content p {
+    color: var(--text-secondary);
+    margin-bottom: 16px;
+    line-height: 1.5;
+    text-align: center;
+}
+
+.sponsor-popup-buttons {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 24px;
+    gap: 12px;
+}
+
+.sponsor-popup-try-btn {
+    background-color: #acff70;
+    color: #0f0e0f;
+    border: none;
+    border-radius: 24px;
+    padding: 12px 24px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.2s;
+    flex-grow: 1;
+    text-align: center;
+    font-weight: 500;
+}
+
+.sponsor-popup-try-btn:hover {
+    background-color: var(--accent-color-hover, var(--accent-color));
+    transform: translateY(-2px);
+}
+
+.sponsor-popup-github-btn {
+    background-color: #0f0e0f;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.2s;
+    text-decoration: none;
+}
+
+.sponsor-popup-github-btn:hover {
+    transform: translateY(-2px);
+}
+
+.sponsor-popup-github-btn svg {
+    fill: #acff70;
+    width: 48px;
+    height: 48px;
+    transition: fill 0.2s;
+}
+
+.sponsor-popup-github-btn:hover svg {
+    fill: var(--accent-color-hover, var(--accent-color));
+    width: 48px;
+    height: 48px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+    .sponsor-popup {
+        width: 95%;
+        max-width: none;
+    }
+    
+    .sponsor-popup-content h2 {
+        font-size: 20px;
+    }
+    
+    .sponsor-popup-content p {
+        font-size: 14px;
+    }
+    
+    .sponsor-popup-try-btn {
+        padding: 10px 20px;
+        font-size: 14px;
+    }
+    
+    .sponsor-popup-github-btn {
+        width: 40px;
+        height: 40px;
+    }
+}
