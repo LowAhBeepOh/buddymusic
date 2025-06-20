@@ -11,6 +11,7 @@ Still not in full development, but it will be done soon.
 ### Other cool features
 - Bulk favoriting and deletion of songs (through search)
 - Slider changes (for people who see a shitty slider because of school chromebooks)
+- Added an Equalizer in settings.
 
 ### 👅 New Themes!!
 - Added new "Nature" theme, light themed, green.
@@ -27,6 +28,7 @@ Still not in full development, but it will be done soon.
 - Added search via URL parameters
 - Enhanced adaptive theme colour calculations
 - Going back to previous song(s) played in shuffle works correctly now.
+- Added an Urchin Tracking Module (UTM) to the website, so that when you join from a specific link, it'll give you a welcome message. (For YouTube, doesn't give the person doing this anything, and is just for free promo stuff.)
 
 ### 💅 UI Improvements
 - Redesigned the add button with a dropdown menu
