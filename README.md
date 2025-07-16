@@ -1,6 +1,13 @@
 # Buddy Music
 An offline music player from the Buddy project/ecosystem.
 
+## Plans for now (NEW)
+I'm currently working on the newer Buddy Music, the name won't change, but I will say that after the newer Buddy Music comes out (either in version 0.XF or 0.A), everything mentioned here you might lose your data on: Everything. Yes, in the newest version there's a 99% chance all your data here will be deleted. This is because I want to code the database names to be more universal, so that it has more flow with other apps, and so I won't need to visit and inspect my own website(s) / code just to recall what the database names was.
+
+The newer version for Buddy Music, will also have less AI generated code / help from AI in coding. I typically used it for prototyping, but in this version I'll be using way less help of it. I wasn't vibe coding it before though, but I will admit I have used it for helping. This might not be such as issue wether I use it or not, but since I want to do web development (and coding in general), I should be less depentant, and should only use it as a last resort at least. Even if it means that updates take more time to make.
+
+You can expect this update to come in about the end of the year.
+
 ## What's New - 0.XD (yes, I updated how the changelog is)
 
 ### 😱 This update's new feature!!!
